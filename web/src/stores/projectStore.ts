@@ -12,7 +12,7 @@ import type {
   Viewport,
 } from '../api/contracts';
 
-export const PROJECT_STORAGE_KEY = 'neural-blueprint-studio.project.v1';
+export const PROJECT_STORAGE_KEY = 'bptorch.project.v1';
 
 type ProjectStorageReader = Pick<Storage, 'getItem'>;
 type ProjectStorageWriter = Pick<Storage, 'setItem'>;

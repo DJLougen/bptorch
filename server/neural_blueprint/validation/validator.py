@@ -1,4 +1,4 @@
-"""4-Pass Validator for Neural Blueprint Studio projects."""
+"""4-Pass Validator for bpTorch projects."""
 
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple

@@ -52,7 +52,7 @@ describe('App Component', () => {
     });
 
     render(<App />);
-    expect(screen.getByText(/NEURAL BLUEPRINT/i)).toBeInTheDocument();
+    expect(screen.getByText(/bpTorch/i)).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText(/Graph Valid/i)).toBeInTheDocument();

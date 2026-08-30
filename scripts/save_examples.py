@@ -74,7 +74,7 @@ def save_examples() -> None:
 
     manifest = {
         "version": 1,
-        "title": "Neural Blueprint Sample Gallery",
+        "title": "bpTorch Sample Gallery",
         "description": "25 trainable architecture demonstrations showcasing the diversity of visual blueprint programming.",
         "count": len(manifest_samples),
         "samples": manifest_samples,

@@ -120,7 +120,7 @@ export const NodePalette: React.FC<{ catalog?: NodeDefinitionSummary[] }> = ({ c
   }));
 
   const handleDragStart = (event: React.DragEvent, typeId: string) => {
-    event.dataTransfer.setData('application/neural-blueprint-node', typeId);
+    event.dataTransfer.setData('application/bptorch-node', typeId);
     event.dataTransfer.effectAllowed = 'move';
   };
 

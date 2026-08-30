@@ -1,4 +1,4 @@
-"""FastAPI application entrypoint for Neural Blueprint Studio."""
+"""FastAPI application entrypoint for bpTorch."""
 
 import os
 from contextlib import asynccontextmanager
@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="Neural Blueprint Studio API",
+        title="bpTorch API",
         version="0.1.0",
         description="Executable Blueprint-style Neural-Network Architecture Runtime API",
         lifespan=lifespan,

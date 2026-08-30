@@ -1,6 +1,6 @@
 # Testing Strategy and Test Suites
 
-Neural Blueprint Studio incorporates a multi-layer testing strategy to ensure mathematical correctness, runtime safety, and UI interaction quality.
+bpTorch incorporates a multi-layer testing strategy to ensure mathematical correctness, runtime safety, and UI interaction quality.
 
 ## Test Suites
 

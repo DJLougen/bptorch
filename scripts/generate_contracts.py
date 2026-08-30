@@ -35,7 +35,7 @@ def generate():
     ts_content = """/* eslint-disable */
 /**
  * Auto-generated Canonical IR TypeScript Contracts.
- * Generated from Neural Blueprint Studio Pydantic models.
+ * Generated from bpTorch Pydantic models.
  */
 
 export type ExpressionOp = 'add' | 'subtract' | 'multiply' | 'integer_divide' | 'minimum' | 'maximum';

@@ -172,7 +172,7 @@ class BlueprintCooker:
             return f'''#!/usr/bin/env python3
 """
 Standalone PyTorch Training Script (Transformer Architecture)
-Cooked from Neural Blueprint Studio (Project: {project.project.name})
+Cooked from bpTorch (Project: {project.project.name})
 Zero Blueprint dependencies required.
 """
 
@@ -430,7 +430,7 @@ if __name__ == "__main__":
         return f'''#!/usr/bin/env python3
 """
 Standalone PyTorch Training Script (Feed-Forward / MLP Architecture)
-Cooked from Neural Blueprint Studio (Project: {project.project.name})
+Cooked from bpTorch (Project: {project.project.name})
 Zero Blueprint dependencies required.
 """
 

@@ -137,7 +137,7 @@ export const TopBar: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Zap size={18} color="#38bdf8" />
           <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: '0.06em', color: '#60a5fa' }}>
-            NEURAL BLUEPRINT
+            bpTorch
           </span>
           <span style={{ fontSize: 10, background: '#1e293b', color: '#94a3b8', padding: '1px 5px', borderRadius: 3 }}>
             v0.1

@@ -1,4 +1,4 @@
-"""Neural Blueprint Studio Cooking Engine."""
+"""bpTorch Cooking Engine."""
 
 from neural_blueprint.cooking.cooker import BlueprintCooker, UnsupportedCookError
 

@@ -9,7 +9,7 @@ ROOT_DIR = Path(__file__).parent.parent
 
 
 def main():
-    print("Running Neural Blueprint Studio nanoGPT Numerical Parity Suite on CPU...")
+    print("Running bpTorch nanoGPT Numerical Parity Suite on CPU...")
     cmd = [
         sys.executable,
         "-m",

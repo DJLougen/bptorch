@@ -1,8 +1,8 @@
-# Neural Blueprint Studio Architecture
+# bpTorch Architecture
 
 ## 1. System Topology
 
-Neural Blueprint Studio is a local-first application organized around a strictly typed client-server architecture:
+bpTorch is a local-first application organized around a strictly typed client-server architecture:
 
 ```text
 ┌────────────────────────────────────────────────────────┐

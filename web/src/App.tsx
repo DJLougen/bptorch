@@ -1,5 +1,5 @@
 /**
- * Main application shell for Neural Blueprint Studio v0.1.
+ * Main application shell for bpTorch v0.1.
  */
 
 import React, { useEffect, useState } from 'react';

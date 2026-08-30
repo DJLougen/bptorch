@@ -1,5 +1,5 @@
 """
-Automated Testing & Evaluation Engine for Neural Blueprint Studio.
+Automated Testing & Evaluation Engine for bpTorch.
 Executes test suites covering shape sanity, autograd health, overfitting, checkpointing, cooking, and stability.
 """
 

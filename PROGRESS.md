@@ -1,4 +1,4 @@
-# Implementation Progress — Neural Blueprint Studio v0.1
+# Implementation Progress — bpTorch v0.1
 
 ## Milestone 0 — Reference Pinning and Technical Skeleton
 - **Status**: Completed

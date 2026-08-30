@@ -1,4 +1,4 @@
-"""Base classes and interfaces for node definitions in Neural Blueprint Studio."""
+"""Base classes and interfaces for node definitions in bpTorch."""
 
 from __future__ import annotations
 

@@ -1,5 +1,5 @@
 /**
- * API client for interacting with the Neural Blueprint Studio backend runtime.
+ * API client for interacting with the bpTorch backend runtime.
  */
 import {
   AvailableTestInfo,

@@ -1,4 +1,4 @@
-# Neural Blueprint Studio v0.1
+# bpTorch v0.1
 
 ## Executable UE5-Blueprint-Style Neural-Network Architecture Editor
 
@@ -61,7 +61,7 @@ Do not build later-roadmap features before v0.1 passes all acceptance tests.
 Working title:
 
 ```text
-Neural Blueprint Studio
+bpTorch
 ```
 
 The name is temporary and must be isolated in one application metadata/configuration location so it can be changed without refactoring.
@@ -658,7 +658,7 @@ At implementation time:
 Create a monorepo approximately like:
 
 ```text
-neural-blueprint-studio/
+bptorch/
 ├── PLAN.md
 ├── README.md
 ├── ARCHITECTURE.md

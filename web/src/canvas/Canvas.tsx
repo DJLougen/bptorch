@@ -210,7 +210,7 @@ export const Canvas: React.FC<{ catalog: NodeDefinitionSummary[] }> = ({ catalog
   const handleDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
-      const typeId = event.dataTransfer.getData('application/neural-blueprint-node');
+      const typeId = event.dataTransfer.getData('application/bptorch-node');
       if (!typeId) return;
 
       const defn = catalog.find((c) => c.type_id === typeId);

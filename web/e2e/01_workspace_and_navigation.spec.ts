@@ -79,7 +79,7 @@ test.describe('Workspace Navigation & Architecture Hierarchy E2E', () => {
   test('exports, reimports, and restores an authored project after reload', async ({ page }) => {
     await expect(page.locator('header')).toContainText('nanoGPT Architecture');
     const savedProjectJson = await page.evaluate(() =>
-      localStorage.getItem('neural-blueprint-studio.project.v1')
+      localStorage.getItem('bptorch.project.v1')
     );
     if (!savedProjectJson) {
       throw new Error('Expected the bundled project to be persisted before import');

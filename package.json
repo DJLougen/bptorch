@@ -1,5 +1,5 @@
 {
-  "name": "neural-blueprint-studio",
+  "name": "bptorch",
   "version": "0.1.0",
   "private": true,
   "description": "Executable Unreal Engine Blueprint-style neural-network architecture editor",

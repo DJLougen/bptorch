@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Neural Blueprint Studio E2E Acceptance Flow', () => {
+test.describe('bpTorch E2E Acceptance Flow', () => {
   test('launches application and displays nanoGPT blueprint workspace', async ({ page }) => {
     // 1. Visit local application
     await page.goto('/');
 
     // 2. Verify TopBar brand and titles
-    await expect(page.locator('header')).toContainText('NEURAL BLUEPRINT');
+    await expect(page.locator('header')).toContainText('bpTorch');
     await expect(page.locator('header')).toContainText('nanoGPT Architecture');
 
     // 3. Verify Breadcrumb

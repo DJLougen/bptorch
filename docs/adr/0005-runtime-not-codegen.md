@@ -7,7 +7,7 @@ Accepted
 A visual neural network tool can either generate Python source files for the user to execute, or construct a live in-memory PyTorch module (`nn.Module`) directly from the graph IR.
 
 ## Decision
-Neural Blueprint Studio compiles the IR into an in-memory `CompiledGraphModule(torch.nn.Module)`. The module registers child modules into `nn.ModuleDict` / `nn.ModuleList` and builds a topological execution plan. Tracing hooks, breakpoints, tensor statistics capture, and state-dict mappings operate directly on the runtime module. Source code export is a post-v0.1 secondary feature.
+bpTorch compiles the IR into an in-memory `CompiledGraphModule(torch.nn.Module)`. The module registers child modules into `nn.ModuleDict` / `nn.ModuleList` and builds a topological execution plan. Tracing hooks, breakpoints, tensor statistics capture, and state-dict mappings operate directly on the runtime module. Source code export is a post-v0.1 secondary feature.
 
 ## Consequences
 - The visual graph is the executable model, avoiding code generator divergence.

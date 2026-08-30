@@ -1,10 +1,10 @@
-# Neural Blueprint Studio v0.1
+# bpTorch v0.1
 
 Executable Unreal Engine Blueprint-style neural-network architecture editor with PyTorch runtime, progressive disclosure, symbolic shape propagation, interactive execution tracing, and numerical parity against `karpathy/nanoGPT`.
 
 ## Overview
 
-Neural Blueprint Studio treats the visual graph as the canonical executable model specification. A connection on the canvas represents an actual tensor dependency; changing a node property changes the compiled PyTorch model.
+bpTorch treats the visual graph as the canonical executable model specification. A connection on the canvas represents an actual tensor dependency; changing a node property changes the compiled PyTorch model.
 
 ```text
 Visual Graph → Canonical Model IR → Validation & Shape Inference → PyTorch Runtime → Actual Tensors & Loss

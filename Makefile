@@ -15,7 +15,7 @@ setup:
 	cd web && $(NPM) install
 
 dev:
-	@echo "Starting Neural Blueprint Studio backend (:8000) and frontend (:5173)..."
+	@echo "Starting bpTorch backend (:8000) and frontend (:5173)..."
 	@trap 'kill 0' EXIT; \
 	(PYTHONPATH=server $(UVICORN) neural_blueprint.api.main:app --host 127.0.0.1 --port 8000 --reload) & \
 	(cd web && $(NPM) run dev) & \
