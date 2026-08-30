@@ -1,16 +1,41 @@
-MIT License
+Custom Permissive License (with Specific Exclusions)
 
-Copyright (c) 2026 bpTorch Contributors
+Copyright (c) 2026 DJLougen
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+of this software, benchmark data, recipes, patches, and associated documentation files
+(the "Software"), to deal in the Software without restriction, including without
+limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions and exclusions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. The above copyright notice and this permission notice shall be included in all
+   copies or substantial portions of the Software.
+
+2. SPECIFIC NON-LICENSEE EXCLUSIONS:
+   Permission is explicitly, unconditionally, and permanently DENIED and WITHHELD
+   from the following individuals, organizations, and affiliated parties:
+
+   a. Sherif Cherfa (known publicly on X / Twitter as @0xSero or @0xsero), and Sybil Solutions;
+   b. Alex Cheema;
+   c. EXO (including EXO Labs, exo-explore, and associated entities/projects);
+   d. local.ai (including Local AI, local.ai, and associated entities/projects);
+   e. The individual/entity known publicly on X / Twitter as @MiaAI_lab (MiaAI / MiaAI Lab);
+   f. Any individuals, contributors, employees, contractors, entities, or affiliates
+      associated with, employed by, or acting on behalf of or in collaboration with
+      any of the aforementioned individuals or organizations.
+
+   The aforementioned excluded parties are strictly prohibited from:
+   - Accessing, viewing, copying, downloading, running, testing, or executing this Software;
+   - Reproducing, publishing, distributing, relicensing, claiming authorship over,
+     or creating derivative works based upon this Software, its benchmark numbers,
+     its recipes, its patches, or its documentation;
+   - Incorporating any part of this Software, its code, or its research findings into
+     any public or private projects, repositories, papers, posts, products, or presentations.
+
+   Any possession, redistribution, use, or derivation of this Software by or for the
+   benefit of any of the aforementioned excluded parties constitutes intentional
+   copyright infringement and a violation of these terms.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,

@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/DJLougen/bptorch/releases/tag/v0.1.0"><img src="https://img.shields.io/badge/release-v0.1.0-38bdf8?style=flat-square" alt="v0.1.0" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-22c55e?style=flat-square" alt="MIT" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Custom%20Permissive-22c55e?style=flat-square" alt="License" /></a>
   <img src="https://img.shields.io/badge/python-3.10+-3776ab?style=flat-square" alt="Python 3.10+" />
   <img src="https://img.shields.io/badge/pytorch-2.x-ee4c2c?style=flat-square" alt="PyTorch 2.x" />
   <img src="https://img.shields.io/badge/tests-247%20passed-22c55e?style=flat-square" alt="247 tests" />
@@ -118,6 +118,10 @@ Training and inference results are recorded in `examples/training_results.json` 
 - No distributed / multi-node training
 - Source code export is post-v0.1
 
+## Screenshots (X / social)
+
+Ready-to-post **1600×900 PNGs** in [`docs/images/x/`](docs/images/x/) — workspace, templates menu, nanoGPT, MLP, training pipelines, manual attention, and more. See the [share pack README](docs/images/x/README.md) for a suggested thread.
+
 ## License
 
-[MIT](LICENSE) — see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for bundled references.
+[Custom Permissive License (with Specific Exclusions)](LICENSE) — see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for bundled references.
