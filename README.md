@@ -118,9 +118,51 @@ Training and inference results are recorded in `examples/training_results.json` 
 - No distributed / multi-node training
 - Source code export is post-v0.1
 
-## Screenshots (X / social)
+## Screenshots
 
-Ready-to-post **1600×900 PNGs** in [`docs/images/x/`](docs/images/x/) — workspace, templates menu, nanoGPT, MLP, training pipelines, manual attention, and more. See the [share pack README](docs/images/x/README.md) for a suggested thread.
+<p align="center">
+  <img src="docs/images/x/01-workspace-overview.png" alt="bpTorch workspace" width="92%" />
+</p>
+
+<p align="center">
+  <img src="docs/images/x/02-templates-25-samples.png" alt="Templates menu with 25 architecture samples" width="92%" />
+</p>
+
+<p align="center">
+  <img src="docs/images/x/06-arch1-nanogpt-tiny.png" alt="nanoGPT Tiny hierarchical blueprint" width="92%" />
+</p>
+
+<p align="center">
+  <img src="docs/images/x/12-arch1-fit-view.png" alt="nanoGPT fit-to-view" width="92%" />
+</p>
+
+<p align="center">
+  <img src="docs/images/x/03-arch4-mlp.png" alt="Two-layer MLP" width="92%" />
+</p>
+
+<p align="center">
+  <img src="docs/images/x/05-arch7-dual-flow-training.png" alt="Dual-flow training pipeline" width="92%" />
+</p>
+
+<p align="center">
+  <img src="docs/images/x/04-arch6-manual-attention.png" alt="Manual attention transformer" width="92%" />
+</p>
+
+<p align="center">
+  <img src="docs/images/x/07-arch2-nanogpt-deep.png" alt="Deep 6-layer transformer" width="92%" />
+</p>
+
+<p align="center">
+  <img src="docs/images/x/08-arch5-bottleneck-autoencoder.png" alt="Bottleneck autoencoder" width="92%" />
+</p>
+
+<p align="center">
+  <img src="docs/images/x/10-arch20-multihead-attention.png" alt="Multi-head attention" width="92%" />
+</p>
+
+<p align="center">
+  <img src="docs/images/x/14-bottom-diagnostics.png" alt="Diagnostics drawer" width="92%" />
+</p>
 
 ## License
 
