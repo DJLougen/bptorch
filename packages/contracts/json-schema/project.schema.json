@@ -1,0 +1,727 @@
+{
+  "$defs": {
+    "ConfigRefDim": {
+      "properties": {
+        "kind": {
+          "const": "config_ref",
+          "default": "config_ref",
+          "title": "Kind",
+          "type": "string"
+        },
+        "key": {
+          "title": "Key",
+          "type": "string"
+        }
+      },
+      "required": [
+        "key"
+      ],
+      "title": "ConfigRefDim",
+      "type": "object"
+    },
+    "ConfigRefValue": {
+      "properties": {
+        "kind": {
+          "const": "config_ref",
+          "default": "config_ref",
+          "title": "Kind",
+          "type": "string"
+        },
+        "key": {
+          "title": "Key",
+          "type": "string"
+        }
+      },
+      "required": [
+        "key"
+      ],
+      "title": "ConfigRefValue",
+      "type": "object"
+    },
+    "Edge": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/PortReference"
+        },
+        "target": {
+          "$ref": "#/$defs/PortReference"
+        }
+      },
+      "required": [
+        "id",
+        "source",
+        "target"
+      ],
+      "title": "Edge",
+      "type": "object"
+    },
+    "GraphDefinition": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "default": "module",
+          "enum": [
+            "root",
+            "module",
+            "repeat",
+            "architecture",
+            "training_event",
+            "function",
+            "macro"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "interface": {
+          "$ref": "#/$defs/GraphInterface"
+        },
+        "variables": {
+          "items": {
+            "$ref": "#/$defs/VariableDefinition"
+          },
+          "title": "Variables",
+          "type": "array"
+        },
+        "nodes": {
+          "items": {
+            "$ref": "#/$defs/NodeInstance"
+          },
+          "title": "Nodes",
+          "type": "array"
+        },
+        "edges": {
+          "items": {
+            "$ref": "#/$defs/Edge"
+          },
+          "title": "Edges",
+          "type": "array"
+        },
+        "repeat_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "$ref": "#/$defs/ConfigRefValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Repeat Count"
+        },
+        "target_graph_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Graph Id"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "GraphDefinition",
+      "type": "object"
+    },
+    "GraphInterface": {
+      "properties": {
+        "inputs": {
+          "items": {
+            "$ref": "#/$defs/PortDefinition"
+          },
+          "title": "Inputs",
+          "type": "array"
+        },
+        "outputs": {
+          "items": {
+            "$ref": "#/$defs/PortDefinition"
+          },
+          "title": "Outputs",
+          "type": "array"
+        }
+      },
+      "title": "GraphInterface",
+      "type": "object"
+    },
+    "LiteralDim": {
+      "properties": {
+        "kind": {
+          "const": "literal",
+          "default": "literal",
+          "title": "Kind",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "LiteralDim",
+      "type": "object"
+    },
+    "ModelDefinition": {
+      "properties": {
+        "root_graph_id": {
+          "default": "graph_root",
+          "title": "Root Graph Id",
+          "type": "string"
+        },
+        "config": {
+          "additionalProperties": true,
+          "title": "Config",
+          "type": "object"
+        },
+        "training": {
+          "$ref": "#/$defs/TrainingConfig"
+        },
+        "graphs": {
+          "additionalProperties": {
+            "$ref": "#/$defs/GraphDefinition"
+          },
+          "title": "Graphs",
+          "type": "object"
+        },
+        "weight_bindings": {
+          "items": {
+            "$ref": "#/$defs/WeightBinding"
+          },
+          "title": "Weight Bindings",
+          "type": "array"
+        }
+      },
+      "title": "ModelDefinition",
+      "type": "object"
+    },
+    "NodeInstance": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "definition_id": {
+          "title": "Definition Id",
+          "type": "string"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": true,
+          "title": "Properties"
+        },
+        "metadata": {
+          "$ref": "#/$defs/NodeMetadata"
+        }
+      },
+      "required": [
+        "id",
+        "definition_id",
+        "display_name"
+      ],
+      "title": "NodeInstance",
+      "type": "object"
+    },
+    "NodeMetadata": {
+      "properties": {
+        "breakpoint": {
+          "default": false,
+          "title": "Breakpoint",
+          "type": "boolean"
+        },
+        "disabled": {
+          "default": false,
+          "title": "Disabled",
+          "type": "boolean"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        }
+      },
+      "title": "NodeMetadata",
+      "type": "object"
+    },
+    "NodePosition": {
+      "properties": {
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "NodePosition",
+      "type": "object"
+    },
+    "PortDefinition": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "direction": {
+          "enum": [
+            "input",
+            "output"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "kind": {
+          "default": "data",
+          "enum": [
+            "exec",
+            "data"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "required": {
+          "default": true,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "multiplicity": {
+          "default": "single",
+          "enum": [
+            "single",
+            "multiple"
+          ],
+          "title": "Multiplicity",
+          "type": "string"
+        },
+        "tensor_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TensorType"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "default_shape": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/SymbolDim"
+                  },
+                  {
+                    "$ref": "#/$defs/ConfigRefDim"
+                  },
+                  {
+                    "$ref": "#/$defs/LiteralDim"
+                  },
+                  {
+                    "$ref": "#/$defs/UnknownDim"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Default Shape"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        }
+      },
+      "required": [
+        "id",
+        "display_name",
+        "direction"
+      ],
+      "title": "PortDefinition",
+      "type": "object"
+    },
+    "PortReference": {
+      "properties": {
+        "node_id": {
+          "title": "Node Id",
+          "type": "string"
+        },
+        "port_id": {
+          "title": "Port Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "node_id",
+        "port_id"
+      ],
+      "title": "PortReference",
+      "type": "object"
+    },
+    "ProjectMetadata": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "created_at": {
+          "title": "Created At",
+          "type": "string"
+        },
+        "updated_at": {
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "ProjectMetadata",
+      "type": "object"
+    },
+    "SymbolDim": {
+      "properties": {
+        "kind": {
+          "const": "symbol",
+          "default": "symbol",
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "SymbolDim",
+      "type": "object"
+    },
+    "TensorType": {
+      "properties": {
+        "dtype_family": {
+          "default": "floating",
+          "enum": [
+            "floating",
+            "integer",
+            "boolean",
+            "any"
+          ],
+          "title": "Dtype Family",
+          "type": "string"
+        },
+        "rank": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rank"
+        }
+      },
+      "title": "TensorType",
+      "type": "object"
+    },
+    "TrainingConfig": {
+      "properties": {
+        "device": {
+          "default": "cpu",
+          "title": "Device",
+          "type": "string"
+        },
+        "precision": {
+          "default": "fp32",
+          "enum": [
+            "fp32",
+            "fp16",
+            "bf16",
+            "fp8"
+          ],
+          "title": "Precision",
+          "type": "string"
+        },
+        "ddp_enabled": {
+          "default": false,
+          "title": "Ddp Enabled",
+          "type": "boolean"
+        },
+        "seed": {
+          "default": 1337,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "max_epochs": {
+          "default": 10,
+          "title": "Max Epochs",
+          "type": "integer"
+        },
+        "max_steps": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 1000,
+          "title": "Max Steps"
+        },
+        "learning_rate": {
+          "default": 0.0006,
+          "title": "Learning Rate",
+          "type": "number"
+        },
+        "weight_decay": {
+          "default": 0.1,
+          "title": "Weight Decay",
+          "type": "number"
+        },
+        "grad_accum_steps": {
+          "default": 1,
+          "title": "Grad Accum Steps",
+          "type": "integer"
+        },
+        "grad_clip": {
+          "default": 1.0,
+          "title": "Grad Clip",
+          "type": "number"
+        },
+        "batch_size": {
+          "default": 8,
+          "title": "Batch Size",
+          "type": "integer"
+        },
+        "checkpoint_interval": {
+          "default": 100,
+          "title": "Checkpoint Interval",
+          "type": "integer"
+        },
+        "eval_interval": {
+          "default": 50,
+          "title": "Eval Interval",
+          "type": "integer"
+        }
+      },
+      "title": "TrainingConfig",
+      "type": "object"
+    },
+    "UIState": {
+      "properties": {
+        "graph_viewports": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Viewport"
+          },
+          "title": "Graph Viewports",
+          "type": "object"
+        },
+        "node_positions": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "$ref": "#/$defs/NodePosition"
+            },
+            "type": "object"
+          },
+          "title": "Node Positions",
+          "type": "object"
+        },
+        "open_graph_id": {
+          "default": "graph_root",
+          "title": "Open Graph Id",
+          "type": "string"
+        }
+      },
+      "title": "UIState",
+      "type": "object"
+    },
+    "UnknownDim": {
+      "properties": {
+        "kind": {
+          "const": "unknown",
+          "default": "unknown",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "title": "UnknownDim",
+      "type": "object"
+    },
+    "VariableDefinition": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "default": "float",
+          "title": "Type",
+          "type": "string"
+        },
+        "default_value": {
+          "default": null,
+          "title": "Default Value"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "VariableDefinition",
+      "type": "object"
+    },
+    "Viewport": {
+      "properties": {
+        "x": {
+          "default": 0.0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "default": 0.0,
+          "title": "Y",
+          "type": "number"
+        },
+        "zoom": {
+          "default": 1.0,
+          "title": "Zoom",
+          "type": "number"
+        }
+      },
+      "title": "Viewport",
+      "type": "object"
+    },
+    "WeightBinding": {
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/WeightBindingEndpoint"
+        },
+        "target": {
+          "$ref": "#/$defs/WeightBindingEndpoint"
+        },
+        "mode": {
+          "default": "share",
+          "enum": [
+            "share",
+            "copy"
+          ],
+          "title": "Mode",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "target"
+      ],
+      "title": "WeightBinding",
+      "type": "object"
+    },
+    "WeightBindingEndpoint": {
+      "properties": {
+        "node_id": {
+          "title": "Node Id",
+          "type": "string"
+        },
+        "parameter": {
+          "default": "weight",
+          "title": "Parameter",
+          "type": "string"
+        }
+      },
+      "required": [
+        "node_id"
+      ],
+      "title": "WeightBindingEndpoint",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "project": {
+      "$ref": "#/$defs/ProjectMetadata"
+    },
+    "model": {
+      "$ref": "#/$defs/ModelDefinition"
+    },
+    "ui": {
+      "$ref": "#/$defs/UIState"
+    }
+  },
+  "required": [
+    "project",
+    "model"
+  ],
+  "title": "Project",
+  "type": "object"
+}

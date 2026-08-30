@@ -1,0 +1,257 @@
+{
+  "total": 25,
+  "passed": 25,
+  "failed": 0,
+  "results": [
+    {
+      "id": "arch_1_nanogpt_tiny",
+      "name": "Arch 1: nanoGPT Tiny",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 3.4819750785827637,
+      "final_loss": 3.4691498279571533,
+      "loss_delta": 0.012825250625610352,
+      "error": null
+    },
+    {
+      "id": "arch_2_nanogpt_deep",
+      "name": "Arch 2: nanoGPT Deep (6L)",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 4.175629615783691,
+      "final_loss": 4.167471885681152,
+      "loss_delta": 0.008157730102539062,
+      "error": null
+    },
+    {
+      "id": "arch_3_nanogpt_wide",
+      "name": "Arch 3: nanoGPT Wide (1L/8H)",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 4.855077266693115,
+      "final_loss": 4.8710455894470215,
+      "loss_delta": -0.01596832275390625,
+      "error": null
+    },
+    {
+      "id": "arch_4_twolayer_mlp",
+      "name": "Arch 4: Two-Layer MLP",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 1.0335263013839722,
+      "final_loss": 1.0065722465515137,
+      "loss_delta": 0.026954054832458496,
+      "error": null
+    },
+    {
+      "id": "arch_5_bottleneck_mlp",
+      "name": "Arch 5: Bottleneck Autoencoder",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 1.0184260606765747,
+      "final_loss": 0.9531720876693726,
+      "loss_delta": 0.06525397300720215,
+      "error": null
+    },
+    {
+      "id": "arch_6_manual_attn",
+      "name": "Arch 6: Manual Attention Transformer",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 3.86670184135437,
+      "final_loss": 3.8617849349975586,
+      "loss_delta": 0.0049169063568115234,
+      "error": null
+    },
+    {
+      "id": "arch_7_dual_flow",
+      "name": "Arch 7: Dual-Flow Pipeline",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 3.4656484127044678,
+      "final_loss": 3.465409278869629,
+      "loss_delta": 0.0002391338348388672,
+      "error": null
+    },
+    {
+      "id": "arch_8_resmlp",
+      "name": "Arch 8: ResMLP Residual Network",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 0.00021536997519433498,
+      "final_loss": 0.00021066672343295068,
+      "loss_delta": 4.703251761384308e-06,
+      "error": null
+    },
+    {
+      "id": "arch_9_multihead",
+      "name": "Arch 9: Multi-Head Projection",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 0.9992272853851318,
+      "final_loss": 0.9971318244934082,
+      "loss_delta": 0.002095460891723633,
+      "error": null
+    },
+    {
+      "id": "arch_10_multitask",
+      "name": "Arch 10: Multi-Task Joint Network",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 1.6964605720204418e-08,
+      "final_loss": 1.7950137376487874e-08,
+      "loss_delta": -9.85531656283456e-10,
+      "error": null
+    },
+    {
+      "id": "arch_11_relu_classifier",
+      "name": "Arch 11: ReLU Classifier MLP",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 0.9271932244300842,
+      "final_loss": 1.0916111469268799,
+      "loss_delta": -0.16441792249679565,
+      "error": null
+    },
+    {
+      "id": "arch_12_dropout_mlp",
+      "name": "Arch 12: Dropout MLP",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 0.0003502994659356773,
+      "final_loss": 0.00030915881507098675,
+      "loss_delta": 4.114065086469054e-05,
+      "error": null
+    },
+    {
+      "id": "arch_13_deep_tower",
+      "name": "Arch 13: Deep MLP Tower",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 0.9877937436103821,
+      "final_loss": 1.0169942378997803,
+      "loss_delta": -0.029200494289398193,
+      "error": null
+    },
+    {
+      "id": "arch_14_wide_deep",
+      "name": "Arch 14: Wide-and-Deep Network",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 8.369094575755298e-05,
+      "final_loss": 6.050328374840319e-05,
+      "loss_delta": 2.318766200914979e-05,
+      "error": null
+    },
+    {
+      "id": "arch_15_tied_lm",
+      "name": "Arch 15: Tied-Embedding LM",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 6.48962804916664e-06,
+      "final_loss": 6.300896984612336e-06,
+      "loss_delta": 1.8873106455430388e-07,
+      "error": null
+    },
+    {
+      "id": "arch_16_warmup_pipeline",
+      "name": "Arch 16: Warmup Scheduler Pipeline",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 3.4659013748168945,
+      "final_loss": 3.4658396244049072,
+      "loss_delta": 6.175041198730469e-05,
+      "error": null
+    },
+    {
+      "id": "arch_17_step_lr_pipeline",
+      "name": "Arch 17: Step-LR Decay Pipeline",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 3.4655299186706543,
+      "final_loss": 3.4655473232269287,
+      "loss_delta": -1.7404556274414062e-05,
+      "error": null
+    },
+    {
+      "id": "arch_18_prenorm_mlp",
+      "name": "Arch 18: Pre-LayerNorm MLP",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 1.0126577615737915,
+      "final_loss": 1.051426887512207,
+      "loss_delta": -0.03876912593841553,
+      "error": null
+    },
+    {
+      "id": "arch_19_residual_add",
+      "name": "Arch 19: Residual Add MLP",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 2.2334370613098145,
+      "final_loss": 1.8849886655807495,
+      "loss_delta": 0.34844839572906494,
+      "error": null
+    },
+    {
+      "id": "arch_20_binary_cls",
+      "name": "Arch 20: Binary Sequence Classifier",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 4.516454282565974e-06,
+      "final_loss": 3.7831271129107336e-06,
+      "loss_delta": 7.333271696552401e-07,
+      "error": null
+    },
+    {
+      "id": "arch_21_dropout_gpt",
+      "name": "Arch 21: High-Dropout Transformer",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 3.870758295059204,
+      "final_loss": 3.8696067333221436,
+      "loss_delta": 0.0011515617370605469,
+      "error": null
+    },
+    {
+      "id": "arch_22_bf16_gpt",
+      "name": "Arch 22: BF16 nanoGPT Micro",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 3.46618914604187,
+      "final_loss": 3.4687252044677734,
+      "loss_delta": -0.0025360584259033203,
+      "error": null
+    },
+    {
+      "id": "arch_23_single_block",
+      "name": "Arch 23: Single-Block Causal GPT",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 4.151663780212402,
+      "final_loss": 4.163736820220947,
+      "loss_delta": -0.012073040008544922,
+      "error": null
+    },
+    {
+      "id": "arch_24_silu_ffn",
+      "name": "Arch 24: SiLU Deep Feedforward",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 1.125201940536499,
+      "final_loss": 0.9440125823020935,
+      "loss_delta": 0.18118935823440552,
+      "error": null
+    },
+    {
+      "id": "arch_25_metric_pipeline",
+      "name": "Arch 25: Metric Logger Pipeline",
+      "status": "ok",
+      "steps_completed": 5,
+      "initial_loss": 3.465902805328369,
+      "final_loss": 3.4658873081207275,
+      "loss_delta": 1.5497207641601562e-05,
+      "error": null
+    }
+  ]
+}

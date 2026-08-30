@@ -1,0 +1,263 @@
+{
+  "schema_version": 1,
+  "project": {
+    "id": "arch_5_bottleneck_mlp",
+    "name": "Arch 5: Bottleneck Autoencoder",
+    "created_at": "2026-08-25T00:00:00Z",
+    "updated_at": "2026-08-25T00:00:00Z"
+  },
+  "model": {
+    "root_graph_id": "graph_bottleneck",
+    "config": {
+      "in_features": 128,
+      "hidden_1": 64,
+      "bottleneck": 16,
+      "hidden_2": 64,
+      "out_features": 128
+    },
+    "training": {
+      "device": "cpu",
+      "precision": "fp32",
+      "ddp_enabled": false,
+      "seed": 555,
+      "max_epochs": 10,
+      "max_steps": 40,
+      "learning_rate": 0.002,
+      "weight_decay": 1e-05,
+      "grad_accum_steps": 1,
+      "grad_clip": 1.0,
+      "batch_size": 8,
+      "checkpoint_interval": 100,
+      "eval_interval": 50
+    },
+    "graphs": {
+      "graph_bottleneck": {
+        "id": "graph_bottleneck",
+        "name": "Bottleneck Autoencoder",
+        "kind": "root",
+        "interface": {
+          "inputs": [],
+          "outputs": []
+        },
+        "variables": [],
+        "nodes": [
+          {
+            "id": "node_in",
+            "definition_id": "builtin.tensor_input@1",
+            "display_name": "Input Features",
+            "properties": {
+              "name": "input"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_enc1",
+            "definition_id": "builtin.linear@1",
+            "display_name": "Encoder Linear 1",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "in_features"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "hidden_1"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_act1",
+            "definition_id": "builtin.silu@1",
+            "display_name": "SiLU 1",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_bottleneck",
+            "definition_id": "builtin.linear@1",
+            "display_name": "Bottleneck Linear",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "hidden_1"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "bottleneck"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_dec1",
+            "definition_id": "builtin.linear@1",
+            "display_name": "Decoder Linear 1",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "bottleneck"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "hidden_2"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_act2",
+            "definition_id": "builtin.silu@1",
+            "display_name": "SiLU 2",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_out_proj",
+            "definition_id": "builtin.linear@1",
+            "display_name": "Output Linear",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "hidden_2"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "out_features"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_out",
+            "definition_id": "builtin.graph_output@1",
+            "display_name": "Reconstructed",
+            "properties": {
+              "name": "output"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": {
+              "node_id": "node_in",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_enc1",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e2",
+            "source": {
+              "node_id": "node_enc1",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_act1",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e3",
+            "source": {
+              "node_id": "node_act1",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_bottleneck",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e4",
+            "source": {
+              "node_id": "node_bottleneck",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_dec1",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e5",
+            "source": {
+              "node_id": "node_dec1",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_act2",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e6",
+            "source": {
+              "node_id": "node_act2",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_out_proj",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e7",
+            "source": {
+              "node_id": "node_out_proj",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_out",
+              "port_id": "input"
+            }
+          }
+        ],
+        "repeat_count": null,
+        "target_graph_id": null
+      }
+    },
+    "weight_bindings": []
+  },
+  "ui": {
+    "graph_viewports": {},
+    "node_positions": {},
+    "open_graph_id": "graph_bottleneck"
+  }
+}

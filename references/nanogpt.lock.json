@@ -1,0 +1,7 @@
+{
+  "repository": "karpathy/nanoGPT",
+  "commit": "3adf61e154c3fe3fca428ad6bc3818b27a3b8291",
+  "reference_file": "model.py",
+  "license": "MIT",
+  "pinned_at": "2026-08-18T23:58:48Z"
+}

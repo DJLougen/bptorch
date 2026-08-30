@@ -1,0 +1,273 @@
+{
+  "schema_version": 1,
+  "project": {
+    "id": "arch_14_wide_deep",
+    "name": "Arch 14: Wide-and-Deep Network",
+    "created_at": "2026-08-30T00:00:00Z",
+    "updated_at": "2026-08-30T00:00:00Z"
+  },
+  "model": {
+    "root_graph_id": "graph_wide_deep",
+    "config": {
+      "in_dim": 32,
+      "wide_dim": 16,
+      "deep_hidden": 64,
+      "out_dim": 16
+    },
+    "training": {
+      "device": "cpu",
+      "precision": "fp32",
+      "ddp_enabled": false,
+      "seed": 414,
+      "max_epochs": 10,
+      "max_steps": 40,
+      "learning_rate": 0.003,
+      "weight_decay": 0.01,
+      "grad_accum_steps": 1,
+      "grad_clip": 1.0,
+      "batch_size": 8,
+      "checkpoint_interval": 100,
+      "eval_interval": 50
+    },
+    "graphs": {
+      "graph_wide_deep": {
+        "id": "graph_wide_deep",
+        "name": "Wide-and-Deep",
+        "kind": "root",
+        "interface": {
+          "inputs": [],
+          "outputs": []
+        },
+        "variables": [],
+        "nodes": [
+          {
+            "id": "node_in",
+            "definition_id": "builtin.tensor_input@1",
+            "display_name": "Input",
+            "properties": {
+              "name": "input"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_wide",
+            "definition_id": "builtin.linear@1",
+            "display_name": "Wide Path",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "in_dim"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "wide_dim"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_deep1",
+            "definition_id": "builtin.linear@1",
+            "display_name": "Deep FC1",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "in_dim"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "deep_hidden"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_deep_act",
+            "definition_id": "builtin.silu@1",
+            "display_name": "SiLU",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_deep2",
+            "definition_id": "builtin.linear@1",
+            "display_name": "Deep FC2",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "deep_hidden"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "wide_dim"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_fuse",
+            "definition_id": "builtin.add@1",
+            "display_name": "Fuse Wide+Deep",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_out_proj",
+            "definition_id": "builtin.linear@1",
+            "display_name": "Output Projection",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "wide_dim"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "out_dim"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_out",
+            "definition_id": "builtin.graph_output@1",
+            "display_name": "Output",
+            "properties": {
+              "name": "output"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": {
+              "node_id": "node_in",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_wide",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e2",
+            "source": {
+              "node_id": "node_in",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_deep1",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e3",
+            "source": {
+              "node_id": "node_deep1",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_deep_act",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e4",
+            "source": {
+              "node_id": "node_deep_act",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_deep2",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e5a",
+            "source": {
+              "node_id": "node_wide",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_fuse",
+              "port_id": "a"
+            }
+          },
+          {
+            "id": "e5b",
+            "source": {
+              "node_id": "node_deep2",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_fuse",
+              "port_id": "b"
+            }
+          },
+          {
+            "id": "e6",
+            "source": {
+              "node_id": "node_fuse",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_out_proj",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e7",
+            "source": {
+              "node_id": "node_out_proj",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_out",
+              "port_id": "input"
+            }
+          }
+        ],
+        "repeat_count": null,
+        "target_graph_id": null
+      }
+    },
+    "weight_bindings": []
+  },
+  "ui": {
+    "graph_viewports": {},
+    "node_positions": {},
+    "open_graph_id": "graph_wide_deep"
+  }
+}

@@ -1,0 +1,346 @@
+{
+  "schema_version": 1,
+  "project": {
+    "id": "arch_7_dual_flow",
+    "name": "Arch 7: Dual-Flow Pipeline",
+    "created_at": "2026-08-25T00:00:00Z",
+    "updated_at": "2026-08-25T00:00:00Z"
+  },
+  "model": {
+    "root_graph_id": "graph_dual_flow",
+    "config": {
+      "n_embd": 16
+    },
+    "training": {
+      "device": "cpu",
+      "precision": "fp32",
+      "ddp_enabled": false,
+      "seed": 999,
+      "max_epochs": 10,
+      "max_steps": 50,
+      "learning_rate": 0.001,
+      "weight_decay": 0.01,
+      "grad_accum_steps": 1,
+      "grad_clip": 1.0,
+      "batch_size": 8,
+      "checkpoint_interval": 100,
+      "eval_interval": 50
+    },
+    "graphs": {
+      "graph_dual_flow": {
+        "id": "graph_dual_flow",
+        "name": "Dual Flow Event Pipeline",
+        "kind": "training_event",
+        "interface": {
+          "inputs": [],
+          "outputs": []
+        },
+        "variables": [],
+        "nodes": [
+          {
+            "id": "node_dataset",
+            "definition_id": "builtin.dataset_source@1",
+            "display_name": "Dataset Source",
+            "properties": {
+              "num_samples": 500,
+              "vocab_size": 32,
+              "sequence_length": 8
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_dataloader",
+            "definition_id": "builtin.dataloader@1",
+            "display_name": "DataLoader",
+            "properties": {
+              "batch_size": 8
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_emb",
+            "definition_id": "builtin.embedding@1",
+            "display_name": "Embedding",
+            "properties": {
+              "num_embeddings": 32,
+              "embedding_dim": 16
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_forward",
+            "definition_id": "builtin.linear@1",
+            "display_name": "Linear Forward",
+            "properties": {
+              "in_features": 16,
+              "out_features": 32
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_loss",
+            "definition_id": "builtin.cross_entropy_loss@1",
+            "display_name": "Cross Entropy Loss",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_backward",
+            "definition_id": "builtin.backward@1",
+            "display_name": "Backward Autograd",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_clip_grad",
+            "definition_id": "builtin.clip_gradients@1",
+            "display_name": "Clip Gradients",
+            "properties": {
+              "max_norm": 1
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_opt_step",
+            "definition_id": "builtin.optimizer_step@1",
+            "display_name": "Optimizer Step",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_lr_sched",
+            "definition_id": "builtin.cosine_annealing_lr@1",
+            "display_name": "Cosine Decay LR",
+            "properties": {
+              "warmup_steps": 10,
+              "total_steps": 50
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_zero_grad",
+            "definition_id": "builtin.zero_grad@1",
+            "display_name": "Zero Grad",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e_exec_1",
+            "source": {
+              "node_id": "node_dataset",
+              "port_id": "exec_out"
+            },
+            "target": {
+              "node_id": "node_dataloader",
+              "port_id": "exec_in"
+            }
+          },
+          {
+            "id": "e_exec_2",
+            "source": {
+              "node_id": "node_dataloader",
+              "port_id": "exec_out"
+            },
+            "target": {
+              "node_id": "node_emb",
+              "port_id": "exec_in"
+            }
+          },
+          {
+            "id": "e_exec_2b",
+            "source": {
+              "node_id": "node_emb",
+              "port_id": "exec_out"
+            },
+            "target": {
+              "node_id": "node_forward",
+              "port_id": "exec_in"
+            }
+          },
+          {
+            "id": "e_exec_3",
+            "source": {
+              "node_id": "node_forward",
+              "port_id": "exec_out"
+            },
+            "target": {
+              "node_id": "node_loss",
+              "port_id": "exec_in"
+            }
+          },
+          {
+            "id": "e_exec_4",
+            "source": {
+              "node_id": "node_loss",
+              "port_id": "exec_out"
+            },
+            "target": {
+              "node_id": "node_backward",
+              "port_id": "exec_in"
+            }
+          },
+          {
+            "id": "e_exec_5",
+            "source": {
+              "node_id": "node_backward",
+              "port_id": "exec_out"
+            },
+            "target": {
+              "node_id": "node_clip_grad",
+              "port_id": "exec_in"
+            }
+          },
+          {
+            "id": "e_exec_6",
+            "source": {
+              "node_id": "node_clip_grad",
+              "port_id": "exec_out"
+            },
+            "target": {
+              "node_id": "node_opt_step",
+              "port_id": "exec_in"
+            }
+          },
+          {
+            "id": "e_exec_7",
+            "source": {
+              "node_id": "node_opt_step",
+              "port_id": "exec_out"
+            },
+            "target": {
+              "node_id": "node_lr_sched",
+              "port_id": "exec_in"
+            }
+          },
+          {
+            "id": "e_exec_8",
+            "source": {
+              "node_id": "node_lr_sched",
+              "port_id": "exec_out"
+            },
+            "target": {
+              "node_id": "node_zero_grad",
+              "port_id": "exec_in"
+            }
+          },
+          {
+            "id": "e_data_1",
+            "source": {
+              "node_id": "node_dataset",
+              "port_id": "dataset"
+            },
+            "target": {
+              "node_id": "node_dataloader",
+              "port_id": "dataset"
+            }
+          },
+          {
+            "id": "e_data_2",
+            "source": {
+              "node_id": "node_dataloader",
+              "port_id": "batch_x"
+            },
+            "target": {
+              "node_id": "node_emb",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_data_3",
+            "source": {
+              "node_id": "node_emb",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_forward",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_data_4",
+            "source": {
+              "node_id": "node_forward",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_loss",
+              "port_id": "logits"
+            }
+          },
+          {
+            "id": "e_data_5",
+            "source": {
+              "node_id": "node_dataloader",
+              "port_id": "batch_y"
+            },
+            "target": {
+              "node_id": "node_loss",
+              "port_id": "targets"
+            }
+          },
+          {
+            "id": "e_data_6",
+            "source": {
+              "node_id": "node_loss",
+              "port_id": "loss"
+            },
+            "target": {
+              "node_id": "node_backward",
+              "port_id": "loss"
+            }
+          }
+        ],
+        "repeat_count": null,
+        "target_graph_id": null
+      }
+    },
+    "weight_bindings": []
+  },
+  "ui": {
+    "graph_viewports": {},
+    "node_positions": {},
+    "open_graph_id": "graph_dual_flow"
+  }
+}

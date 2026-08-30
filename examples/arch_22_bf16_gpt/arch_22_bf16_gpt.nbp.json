@@ -1,0 +1,1747 @@
+{
+  "schema_version": 1,
+  "project": {
+    "id": "arch_22_bf16_gpt",
+    "name": "Arch 22: BF16 nanoGPT Micro",
+    "created_at": "2026-08-18T00:00:00Z",
+    "updated_at": "2026-08-18T00:00:00Z"
+  },
+  "model": {
+    "root_graph_id": "graph_gpt",
+    "config": {
+      "block_size": 8,
+      "vocab_size": 32,
+      "n_layer": 2,
+      "n_head": 2,
+      "n_embd": 16,
+      "dropout": 0.0,
+      "bias": true,
+      "attention_implementation": "sdpa"
+    },
+    "training": {
+      "device": "cpu",
+      "precision": "bf16",
+      "ddp_enabled": false,
+      "seed": 1222,
+      "max_epochs": 10,
+      "max_steps": 30,
+      "learning_rate": 0.0006,
+      "weight_decay": 0.01,
+      "grad_accum_steps": 1,
+      "grad_clip": 1.0,
+      "batch_size": 8,
+      "checkpoint_interval": 100,
+      "eval_interval": 50
+    },
+    "graphs": {
+      "graph_gpt": {
+        "id": "graph_gpt",
+        "name": "nanoGPT",
+        "kind": "root",
+        "interface": {
+          "inputs": [],
+          "outputs": []
+        },
+        "variables": [],
+        "nodes": [
+          {
+            "id": "node_token_ids",
+            "definition_id": "builtin.token_input@1",
+            "display_name": "Token IDs Input [B, T]",
+            "properties": {
+              "name": "token_ids"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_input_embeddings",
+            "definition_id": "builtin.nanogpt_input_embeddings@1",
+            "display_name": "Input Embeddings",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_transformer_stack",
+            "definition_id": "builtin.nanogpt_stack@1",
+            "display_name": "Transformer Stack (h)",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_ln_f",
+            "definition_id": "builtin.layernorm@1",
+            "display_name": "Final LayerNorm (ln_f)",
+            "properties": {
+              "normalized_shape": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "bias": {
+                "kind": "config_ref",
+                "key": "bias"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_lm_head",
+            "definition_id": "builtin.lm_head@1",
+            "display_name": "LM Head (tied)",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "vocab_size"
+              },
+              "bias": false
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_logits_out",
+            "definition_id": "builtin.logits_output@1",
+            "display_name": "Logits Output",
+            "properties": {
+              "name": "logits"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_targets",
+            "definition_id": "builtin.target_input@1",
+            "display_name": "Targets Input [B, T]",
+            "properties": {
+              "name": "targets"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_cross_entropy",
+            "definition_id": "builtin.cross_entropy_loss@1",
+            "display_name": "Cross-Entropy Loss",
+            "properties": {
+              "ignore_index": -1
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_loss_out",
+            "definition_id": "builtin.loss_output@1",
+            "display_name": "Loss Output",
+            "properties": {
+              "name": "loss"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e_root_tok_emb",
+            "source": {
+              "node_id": "node_token_ids",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_input_embeddings",
+              "port_id": "tokens"
+            }
+          },
+          {
+            "id": "e_root_emb_stack",
+            "source": {
+              "node_id": "node_input_embeddings",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_transformer_stack",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_root_stack_lnf",
+            "source": {
+              "node_id": "node_transformer_stack",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_ln_f",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_root_lnf_head",
+            "source": {
+              "node_id": "node_ln_f",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_lm_head",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_root_head_logits",
+            "source": {
+              "node_id": "node_lm_head",
+              "port_id": "logits"
+            },
+            "target": {
+              "node_id": "node_logits_out",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_root_loss_logits",
+            "source": {
+              "node_id": "node_lm_head",
+              "port_id": "logits"
+            },
+            "target": {
+              "node_id": "node_cross_entropy",
+              "port_id": "logits"
+            }
+          },
+          {
+            "id": "e_root_loss_targets",
+            "source": {
+              "node_id": "node_targets",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_cross_entropy",
+              "port_id": "targets"
+            }
+          },
+          {
+            "id": "e_root_loss_out",
+            "source": {
+              "node_id": "node_cross_entropy",
+              "port_id": "loss"
+            },
+            "target": {
+              "node_id": "node_loss_out",
+              "port_id": "input"
+            }
+          }
+        ],
+        "repeat_count": null,
+        "target_graph_id": null
+      },
+      "graph_input_embeddings": {
+        "id": "graph_input_embeddings",
+        "name": "Input Embeddings",
+        "kind": "module",
+        "interface": {
+          "inputs": [
+            {
+              "id": "tokens",
+              "display_name": "Tokens",
+              "direction": "input",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ],
+          "outputs": [
+            {
+              "id": "output",
+              "display_name": "Embeddings",
+              "direction": "output",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ]
+        },
+        "variables": [],
+        "nodes": [
+          {
+            "id": "node_in_tokens",
+            "definition_id": "builtin.module_input@1",
+            "display_name": "Tokens Input",
+            "properties": {
+              "name": "tokens"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_tok_emb",
+            "definition_id": "builtin.embedding@1",
+            "display_name": "Token Embedding (wte)",
+            "properties": {
+              "num_embeddings": {
+                "kind": "config_ref",
+                "key": "vocab_size"
+              },
+              "embedding_dim": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_pos_arange",
+            "definition_id": "builtin.arange@1",
+            "display_name": "Position Range [T]",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_pos_emb",
+            "definition_id": "builtin.embedding@1",
+            "display_name": "Position Embedding (wpe)",
+            "properties": {
+              "num_embeddings": {
+                "kind": "config_ref",
+                "key": "block_size"
+              },
+              "embedding_dim": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_emb_add",
+            "definition_id": "builtin.add@1",
+            "display_name": "Add Embeddings",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_emb_drop",
+            "definition_id": "builtin.dropout@1",
+            "display_name": "Embedding Dropout",
+            "properties": {
+              "dropout": {
+                "kind": "config_ref",
+                "key": "dropout"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_emb_out",
+            "definition_id": "builtin.module_output@1",
+            "display_name": "Output",
+            "properties": {
+              "name": "output"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e_tok_in",
+            "source": {
+              "node_id": "node_in_tokens",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_tok_emb",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_pos_in",
+            "source": {
+              "node_id": "node_in_tokens",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_pos_arange",
+              "port_id": "sequence_tensor"
+            }
+          },
+          {
+            "id": "e_pos_emb",
+            "source": {
+              "node_id": "node_pos_arange",
+              "port_id": "positions"
+            },
+            "target": {
+              "node_id": "node_pos_emb",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_add_tok",
+            "source": {
+              "node_id": "node_tok_emb",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_emb_add",
+              "port_id": "a"
+            }
+          },
+          {
+            "id": "e_add_pos",
+            "source": {
+              "node_id": "node_pos_emb",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_emb_add",
+              "port_id": "b"
+            }
+          },
+          {
+            "id": "e_drop_in",
+            "source": {
+              "node_id": "node_emb_add",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_emb_drop",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_emb_out",
+            "source": {
+              "node_id": "node_emb_drop",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_emb_out",
+              "port_id": "input"
+            }
+          }
+        ],
+        "repeat_count": null,
+        "target_graph_id": null
+      },
+      "graph_attention": {
+        "id": "graph_attention",
+        "name": "Causal Self-Attention",
+        "kind": "module",
+        "interface": {
+          "inputs": [
+            {
+              "id": "input",
+              "display_name": "Input",
+              "direction": "input",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ],
+          "outputs": [
+            {
+              "id": "output",
+              "display_name": "Output",
+              "direction": "output",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ]
+        },
+        "variables": [],
+        "nodes": [
+          {
+            "id": "node_attn_in",
+            "definition_id": "builtin.module_input@1",
+            "display_name": "Attention Input",
+            "properties": {
+              "name": "input"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_qkv_proj",
+            "definition_id": "builtin.linear@1",
+            "display_name": "QKV Projection (c_attn)",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "out_features": {
+                "kind": "expression",
+                "expression": {
+                  "op": "multiply",
+                  "left": 3,
+                  "right": {
+                    "kind": "config_ref",
+                    "key": "n_embd"
+                  }
+                }
+              },
+              "bias": {
+                "kind": "config_ref",
+                "key": "bias"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_split_qkv",
+            "definition_id": "builtin.split_qkv@1",
+            "display_name": "Split QKV",
+            "properties": {
+              "n_embd": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_split_q",
+            "definition_id": "builtin.split_heads@1",
+            "display_name": "Split Heads (Q)",
+            "properties": {
+              "n_head": {
+                "kind": "config_ref",
+                "key": "n_head"
+              },
+              "n_embd": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_split_k",
+            "definition_id": "builtin.split_heads@1",
+            "display_name": "Split Heads (K)",
+            "properties": {
+              "n_head": {
+                "kind": "config_ref",
+                "key": "n_head"
+              },
+              "n_embd": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_split_v",
+            "definition_id": "builtin.split_heads@1",
+            "display_name": "Split Heads (V)",
+            "properties": {
+              "n_head": {
+                "kind": "config_ref",
+                "key": "n_head"
+              },
+              "n_embd": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_causal_attn",
+            "definition_id": "builtin.sdpa@1",
+            "display_name": "Causal Attention",
+            "properties": {
+              "is_causal": true,
+              "dropout": {
+                "kind": "config_ref",
+                "key": "dropout"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_merge_heads",
+            "definition_id": "builtin.merge_heads@1",
+            "display_name": "Merge Heads",
+            "properties": {
+              "n_embd": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_attn_c_proj",
+            "definition_id": "builtin.linear@1",
+            "display_name": "Output Projection (c_proj)",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "bias": {
+                "kind": "config_ref",
+                "key": "bias"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_attn_drop",
+            "definition_id": "builtin.dropout@1",
+            "display_name": "Residual Dropout",
+            "properties": {
+              "dropout": {
+                "kind": "config_ref",
+                "key": "dropout"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_attn_out",
+            "definition_id": "builtin.module_output@1",
+            "display_name": "Output",
+            "properties": {
+              "name": "output"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e_att_qkv",
+            "source": {
+              "node_id": "node_attn_in",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_qkv_proj",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_qkv_split",
+            "source": {
+              "node_id": "node_qkv_proj",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_split_qkv",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_q_heads",
+            "source": {
+              "node_id": "node_split_qkv",
+              "port_id": "q"
+            },
+            "target": {
+              "node_id": "node_split_q",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_k_heads",
+            "source": {
+              "node_id": "node_split_qkv",
+              "port_id": "k"
+            },
+            "target": {
+              "node_id": "node_split_k",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_v_heads",
+            "source": {
+              "node_id": "node_split_qkv",
+              "port_id": "v"
+            },
+            "target": {
+              "node_id": "node_split_v",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_sdpa_q",
+            "source": {
+              "node_id": "node_split_q",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_causal_attn",
+              "port_id": "q"
+            }
+          },
+          {
+            "id": "e_sdpa_k",
+            "source": {
+              "node_id": "node_split_k",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_causal_attn",
+              "port_id": "k"
+            }
+          },
+          {
+            "id": "e_sdpa_v",
+            "source": {
+              "node_id": "node_split_v",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_causal_attn",
+              "port_id": "v"
+            }
+          },
+          {
+            "id": "e_merge_in",
+            "source": {
+              "node_id": "node_causal_attn",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_merge_heads",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_proj_in",
+            "source": {
+              "node_id": "node_merge_heads",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_attn_c_proj",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_att_drop",
+            "source": {
+              "node_id": "node_attn_c_proj",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_attn_drop",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_att_out",
+            "source": {
+              "node_id": "node_attn_drop",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_attn_out",
+              "port_id": "input"
+            }
+          }
+        ],
+        "repeat_count": null,
+        "target_graph_id": null
+      },
+      "graph_mlp": {
+        "id": "graph_mlp",
+        "name": "MLP",
+        "kind": "module",
+        "interface": {
+          "inputs": [
+            {
+              "id": "input",
+              "display_name": "Input",
+              "direction": "input",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ],
+          "outputs": [
+            {
+              "id": "output",
+              "display_name": "Output",
+              "direction": "output",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ]
+        },
+        "variables": [],
+        "nodes": [
+          {
+            "id": "node_mlp_in",
+            "definition_id": "builtin.module_input@1",
+            "display_name": "MLP Input",
+            "properties": {
+              "name": "input"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_mlp_c_fc",
+            "definition_id": "builtin.linear@1",
+            "display_name": "Expansion Linear (c_fc)",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "out_features": {
+                "kind": "expression",
+                "expression": {
+                  "op": "multiply",
+                  "left": 4,
+                  "right": {
+                    "kind": "config_ref",
+                    "key": "n_embd"
+                  }
+                }
+              },
+              "bias": {
+                "kind": "config_ref",
+                "key": "bias"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_mlp_gelu",
+            "definition_id": "builtin.gelu@1",
+            "display_name": "GELU",
+            "properties": {
+              "approximate": "none"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_mlp_c_proj",
+            "definition_id": "builtin.linear@1",
+            "display_name": "Projection Linear (c_proj)",
+            "properties": {
+              "in_features": {
+                "kind": "expression",
+                "expression": {
+                  "op": "multiply",
+                  "left": 4,
+                  "right": {
+                    "kind": "config_ref",
+                    "key": "n_embd"
+                  }
+                }
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "bias": {
+                "kind": "config_ref",
+                "key": "bias"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_mlp_drop",
+            "definition_id": "builtin.dropout@1",
+            "display_name": "MLP Dropout",
+            "properties": {
+              "dropout": {
+                "kind": "config_ref",
+                "key": "dropout"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_mlp_out",
+            "definition_id": "builtin.module_output@1",
+            "display_name": "Output",
+            "properties": {
+              "name": "output"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e_mlp_fc",
+            "source": {
+              "node_id": "node_mlp_in",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_mlp_c_fc",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_mlp_gelu",
+            "source": {
+              "node_id": "node_mlp_c_fc",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_mlp_gelu",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_mlp_proj",
+            "source": {
+              "node_id": "node_mlp_gelu",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_mlp_c_proj",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_mlp_drop",
+            "source": {
+              "node_id": "node_mlp_c_proj",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_mlp_drop",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_mlp_out",
+            "source": {
+              "node_id": "node_mlp_drop",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_mlp_out",
+              "port_id": "input"
+            }
+          }
+        ],
+        "repeat_count": null,
+        "target_graph_id": null
+      },
+      "graph_block": {
+        "id": "graph_block",
+        "name": "Transformer Block",
+        "kind": "module",
+        "interface": {
+          "inputs": [
+            {
+              "id": "input",
+              "display_name": "Input",
+              "direction": "input",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ],
+          "outputs": [
+            {
+              "id": "output",
+              "display_name": "Output",
+              "direction": "output",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ]
+        },
+        "variables": [],
+        "nodes": [
+          {
+            "id": "node_blk_in",
+            "definition_id": "builtin.module_input@1",
+            "display_name": "Block Input",
+            "properties": {
+              "name": "input"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_ln_1",
+            "definition_id": "builtin.layernorm@1",
+            "display_name": "LayerNorm 1 (ln_1)",
+            "properties": {
+              "normalized_shape": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "bias": {
+                "kind": "config_ref",
+                "key": "bias"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_attn_subgraph",
+            "definition_id": "builtin.nanogpt_attention@1",
+            "display_name": "Causal Self-Attention",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_resid_add_1",
+            "definition_id": "builtin.add@1",
+            "display_name": "Residual Add 1",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_ln_2",
+            "definition_id": "builtin.layernorm@1",
+            "display_name": "LayerNorm 2 (ln_2)",
+            "properties": {
+              "normalized_shape": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "bias": {
+                "kind": "config_ref",
+                "key": "bias"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_mlp_subgraph",
+            "definition_id": "builtin.nanogpt_mlp@1",
+            "display_name": "MLP",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_resid_add_2",
+            "definition_id": "builtin.add@1",
+            "display_name": "Residual Add 2",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_blk_out",
+            "definition_id": "builtin.module_output@1",
+            "display_name": "Output",
+            "properties": {
+              "name": "output"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e_blk_ln1",
+            "source": {
+              "node_id": "node_blk_in",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_ln_1",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_blk_attn",
+            "source": {
+              "node_id": "node_ln_1",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_attn_subgraph",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_blk_add1_a",
+            "source": {
+              "node_id": "node_blk_in",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_resid_add_1",
+              "port_id": "a"
+            }
+          },
+          {
+            "id": "e_blk_add1_b",
+            "source": {
+              "node_id": "node_attn_subgraph",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_resid_add_1",
+              "port_id": "b"
+            }
+          },
+          {
+            "id": "e_blk_ln2",
+            "source": {
+              "node_id": "node_resid_add_1",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_ln_2",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_blk_mlp",
+            "source": {
+              "node_id": "node_ln_2",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_mlp_subgraph",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_blk_add2_a",
+            "source": {
+              "node_id": "node_resid_add_1",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_resid_add_2",
+              "port_id": "a"
+            }
+          },
+          {
+            "id": "e_blk_add2_b",
+            "source": {
+              "node_id": "node_mlp_subgraph",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_resid_add_2",
+              "port_id": "b"
+            }
+          },
+          {
+            "id": "e_blk_out",
+            "source": {
+              "node_id": "node_resid_add_2",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_blk_out",
+              "port_id": "input"
+            }
+          }
+        ],
+        "repeat_count": null,
+        "target_graph_id": null
+      },
+      "graph_stack": {
+        "id": "graph_stack",
+        "name": "Transformer Stack",
+        "kind": "repeat",
+        "interface": {
+          "inputs": [
+            {
+              "id": "input",
+              "display_name": "Input",
+              "direction": "input",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ],
+          "outputs": [
+            {
+              "id": "output",
+              "display_name": "Output",
+              "direction": "output",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ]
+        },
+        "variables": [],
+        "nodes": [],
+        "edges": [],
+        "repeat_count": {
+          "kind": "config_ref",
+          "key": "n_layer"
+        },
+        "target_graph_id": "graph_block"
+      },
+      "graph_training_event": {
+        "id": "graph_training_event",
+        "name": "Training Event Graph",
+        "kind": "training_event",
+        "interface": {
+          "inputs": [],
+          "outputs": []
+        },
+        "variables": [],
+        "nodes": [
+          {
+            "id": "node_evt_begin",
+            "definition_id": "builtin.event_on_train_begin@1",
+            "display_name": "Event OnTrainBegin",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_train_seq",
+            "definition_id": "builtin.training_sequence@1",
+            "display_name": "Training Sequence",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_dataset_src",
+            "definition_id": "builtin.dataset_source@1",
+            "display_name": "Dataset Source",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_train_dataloader",
+            "definition_id": "builtin.dataloader@1",
+            "display_name": "DataLoader",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_epoch_loop",
+            "definition_id": "builtin.epoch_loop@1",
+            "display_name": "Epoch Loop",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_batch_loop",
+            "definition_id": "builtin.batch_loop@1",
+            "display_name": "Batch Loop",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_backward",
+            "definition_id": "builtin.backward@1",
+            "display_name": "Backward Autograd",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_clip_grad",
+            "definition_id": "builtin.clip_gradients@1",
+            "display_name": "Clip Gradients",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_opt_step",
+            "definition_id": "builtin.optimizer_step@1",
+            "display_name": "Optimizer Step",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_lr_sched",
+            "definition_id": "builtin.cosine_annealing_lr@1",
+            "display_name": "Cosine Decay LR",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_zero_grad",
+            "definition_id": "builtin.zero_grad@1",
+            "display_name": "Zero Grad",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e_evt_seq",
+            "source": {
+              "node_id": "node_evt_begin",
+              "port_id": "exec_out"
+            },
+            "target": {
+              "node_id": "node_train_seq",
+              "port_id": "exec_in"
+            }
+          },
+          {
+            "id": "e_seq_epoch",
+            "source": {
+              "node_id": "node_train_seq",
+              "port_id": "then_0"
+            },
+            "target": {
+              "node_id": "node_epoch_loop",
+              "port_id": "exec_in"
+            }
+          },
+          {
+            "id": "e_epoch_batch",
+            "source": {
+              "node_id": "node_epoch_loop",
+              "port_id": "loop_body"
+            },
+            "target": {
+              "node_id": "node_batch_loop",
+              "port_id": "exec_in"
+            }
+          },
+          {
+            "id": "e_batch_back",
+            "source": {
+              "node_id": "node_batch_loop",
+              "port_id": "loop_body"
+            },
+            "target": {
+              "node_id": "node_backward",
+              "port_id": "exec_in"
+            }
+          },
+          {
+            "id": "e_back_clip",
+            "source": {
+              "node_id": "node_backward",
+              "port_id": "exec_out"
+            },
+            "target": {
+              "node_id": "node_clip_grad",
+              "port_id": "exec_in"
+            }
+          },
+          {
+            "id": "e_clip_opt",
+            "source": {
+              "node_id": "node_clip_grad",
+              "port_id": "exec_out"
+            },
+            "target": {
+              "node_id": "node_opt_step",
+              "port_id": "exec_in"
+            }
+          },
+          {
+            "id": "e_opt_sched",
+            "source": {
+              "node_id": "node_opt_step",
+              "port_id": "exec_out"
+            },
+            "target": {
+              "node_id": "node_lr_sched",
+              "port_id": "exec_in"
+            }
+          },
+          {
+            "id": "e_sched_zero",
+            "source": {
+              "node_id": "node_lr_sched",
+              "port_id": "exec_out"
+            },
+            "target": {
+              "node_id": "node_zero_grad",
+              "port_id": "exec_in"
+            }
+          },
+          {
+            "id": "e_dataset_dl",
+            "source": {
+              "node_id": "node_dataset_src",
+              "port_id": "dataset"
+            },
+            "target": {
+              "node_id": "node_train_dataloader",
+              "port_id": "dataset"
+            }
+          }
+        ],
+        "repeat_count": null,
+        "target_graph_id": null
+      }
+    },
+    "weight_bindings": [
+      {
+        "source": {
+          "node_id": "node_input_embeddings/node_tok_emb",
+          "parameter": "weight"
+        },
+        "target": {
+          "node_id": "node_lm_head",
+          "parameter": "weight"
+        },
+        "mode": "share"
+      }
+    ]
+  },
+  "ui": {
+    "graph_viewports": {
+      "graph_gpt": {
+        "x": 0.0,
+        "y": 0.0,
+        "zoom": 1.0
+      },
+      "graph_input_embeddings": {
+        "x": 0.0,
+        "y": 0.0,
+        "zoom": 1.0
+      },
+      "graph_attention": {
+        "x": 0.0,
+        "y": 0.0,
+        "zoom": 1.0
+      },
+      "graph_mlp": {
+        "x": 0.0,
+        "y": 0.0,
+        "zoom": 1.0
+      },
+      "graph_block": {
+        "x": 0.0,
+        "y": 0.0,
+        "zoom": 1.0
+      },
+      "graph_stack": {
+        "x": 0.0,
+        "y": 0.0,
+        "zoom": 1.0
+      },
+      "graph_training_event": {
+        "x": 0.0,
+        "y": 0.0,
+        "zoom": 1.0
+      }
+    },
+    "node_positions": {
+      "graph_gpt": {
+        "node_token_ids": {
+          "x": 100.0,
+          "y": 200.0
+        },
+        "node_input_embeddings": {
+          "x": 350.0,
+          "y": 200.0
+        },
+        "node_transformer_stack": {
+          "x": 650.0,
+          "y": 200.0
+        },
+        "node_ln_f": {
+          "x": 950.0,
+          "y": 200.0
+        },
+        "node_lm_head": {
+          "x": 1200.0,
+          "y": 200.0
+        },
+        "node_logits_out": {
+          "x": 1450.0,
+          "y": 150.0
+        },
+        "node_targets": {
+          "x": 1200.0,
+          "y": 350.0
+        },
+        "node_cross_entropy": {
+          "x": 1450.0,
+          "y": 300.0
+        },
+        "node_loss_out": {
+          "x": 1700.0,
+          "y": 300.0
+        }
+      },
+      "graph_training_event": {
+        "node_evt_begin": {
+          "x": 50.0,
+          "y": 150.0
+        },
+        "node_train_seq": {
+          "x": 250.0,
+          "y": 150.0
+        },
+        "node_dataset_src": {
+          "x": 50.0,
+          "y": 350.0
+        },
+        "node_train_dataloader": {
+          "x": 250.0,
+          "y": 350.0
+        },
+        "node_epoch_loop": {
+          "x": 500.0,
+          "y": 150.0
+        },
+        "node_batch_loop": {
+          "x": 750.0,
+          "y": 150.0
+        },
+        "node_backward": {
+          "x": 1000.0,
+          "y": 150.0
+        },
+        "node_clip_grad": {
+          "x": 1250.0,
+          "y": 150.0
+        },
+        "node_opt_step": {
+          "x": 1500.0,
+          "y": 150.0
+        },
+        "node_lr_sched": {
+          "x": 1750.0,
+          "y": 150.0
+        },
+        "node_zero_grad": {
+          "x": 2000.0,
+          "y": 150.0
+        }
+      }
+    },
+    "open_graph_id": "graph_gpt"
+  }
+}

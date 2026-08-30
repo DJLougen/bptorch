@@ -1,0 +1,276 @@
+{
+  "schema_version": 1,
+  "project": {
+    "id": "arch_10_multitask",
+    "name": "Arch 10: Multi-Task Network",
+    "created_at": "2026-08-25T00:00:00Z",
+    "updated_at": "2026-08-25T00:00:00Z"
+  },
+  "model": {
+    "root_graph_id": "graph_multitask",
+    "config": {
+      "vocab_size": 64,
+      "n_embd": 32,
+      "num_classes": 2
+    },
+    "training": {
+      "device": "cpu",
+      "precision": "fp32",
+      "ddp_enabled": false,
+      "seed": 404,
+      "max_epochs": 10,
+      "max_steps": 50,
+      "learning_rate": 0.0005,
+      "weight_decay": 0.05,
+      "grad_accum_steps": 1,
+      "grad_clip": 1.0,
+      "batch_size": 8,
+      "checkpoint_interval": 100,
+      "eval_interval": 50
+    },
+    "graphs": {
+      "graph_multitask": {
+        "id": "graph_multitask",
+        "name": "Multi-Task Joint Network",
+        "kind": "root",
+        "interface": {
+          "inputs": [],
+          "outputs": []
+        },
+        "variables": [],
+        "nodes": [
+          {
+            "id": "node_tokens",
+            "definition_id": "builtin.token_input@1",
+            "display_name": "Token IDs Input",
+            "properties": {
+              "name": "token_ids"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_wte",
+            "definition_id": "builtin.embedding@1",
+            "display_name": "Shared Token Embedding",
+            "properties": {
+              "num_embeddings": {
+                "kind": "config_ref",
+                "key": "vocab_size"
+              },
+              "embedding_dim": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_backbone_linear",
+            "definition_id": "builtin.linear@1",
+            "display_name": "Backbone Linear",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_backbone_gelu",
+            "definition_id": "builtin.gelu@1",
+            "display_name": "Backbone GELU",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_lm_head",
+            "definition_id": "builtin.lm_head@1",
+            "display_name": "LM Head",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "vocab_size"
+              },
+              "bias": false
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_lm_logits_out",
+            "definition_id": "builtin.logits_output@1",
+            "display_name": "LM Logits",
+            "properties": {
+              "name": "lm_logits"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_cls_head",
+            "definition_id": "builtin.linear@1",
+            "display_name": "Classification Head",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "num_classes"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_cls_logits_out",
+            "definition_id": "builtin.graph_output@1",
+            "display_name": "Class Logits",
+            "properties": {
+              "name": "cls_logits"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": {
+              "node_id": "node_tokens",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_wte",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e2",
+            "source": {
+              "node_id": "node_wte",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_backbone_linear",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e3",
+            "source": {
+              "node_id": "node_backbone_linear",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_backbone_gelu",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_lm",
+            "source": {
+              "node_id": "node_backbone_gelu",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_lm_head",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_lm_out",
+            "source": {
+              "node_id": "node_lm_head",
+              "port_id": "logits"
+            },
+            "target": {
+              "node_id": "node_lm_logits_out",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_cls",
+            "source": {
+              "node_id": "node_backbone_gelu",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_cls_head",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_cls_out",
+            "source": {
+              "node_id": "node_cls_head",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_cls_logits_out",
+              "port_id": "input"
+            }
+          }
+        ],
+        "repeat_count": null,
+        "target_graph_id": null
+      }
+    },
+    "weight_bindings": [
+      {
+        "source": {
+          "node_id": "node_wte",
+          "parameter": "weight"
+        },
+        "target": {
+          "node_id": "node_lm_head",
+          "parameter": "weight"
+        },
+        "mode": "share"
+      }
+    ]
+  },
+  "ui": {
+    "graph_viewports": {},
+    "node_positions": {},
+    "open_graph_id": "graph_multitask"
+  }
+}

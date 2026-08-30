@@ -1,0 +1,5049 @@
+[
+  {
+    "type_id": "builtin.split_qkv@1",
+    "version": 1,
+    "display_name": "Split QKV",
+    "category": "Attention",
+    "description": "Splits fused QKV linear projection [B, T, 3*C] into separate Query, Key and Value tensors.",
+    "icon": "GitFork",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "n_embd": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "n_embd"
+          }
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Fused QKV [B, T, 3C]",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": 3
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "q",
+        "display_name": "Query (Q)",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "k",
+        "display_name": "Key (K)",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "v",
+        "display_name": "Value (V)",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.split_heads@1",
+    "version": 1,
+    "display_name": "Split Heads",
+    "category": "Attention",
+    "description": "Reshapes and transposes [B, T, C] -> [B, n_head, T, head_dim].",
+    "icon": "Columns",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "n_head": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "n_head"
+          }
+        },
+        "n_embd": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "n_embd"
+          }
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input [B, T, C]",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Heads [B, NH, T, HD]",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.merge_heads@1",
+    "version": 1,
+    "display_name": "Merge Heads",
+    "category": "Attention",
+    "description": "Transposes and reassembles multi-head outputs side-by-side: [B, n_head, T, head_dim] -> [B, T, C].",
+    "icon": "Combine",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "n_embd": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "n_embd"
+          }
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Heads [B, NH, T, HD]",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Output [B, T, C]",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.sdpa@1",
+    "version": 1,
+    "display_name": "Scaled Dot-Product Attention",
+    "category": "Attention",
+    "description": "PyTorch native F.scaled_dot_product_attention with causal masking and optional dropout.",
+    "icon": "Zap",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "is_causal": {
+          "type": "boolean",
+          "default": true
+        },
+        "dropout": {
+          "type": [
+            "number",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "dropout"
+          }
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "q",
+        "display_name": "Query (Q)",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "k",
+        "display_name": "Key (K)",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "v",
+        "display_name": "Value (V)",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Attention Output",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.manual_causal_attention@1",
+    "version": 1,
+    "display_name": "Manual Causal Attention",
+    "category": "Attention",
+    "description": "Exact semantic attention matching karpathy/nanoGPT manual causal attention implementation.",
+    "icon": "Settings",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "dropout": {
+          "type": [
+            "number",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "dropout"
+          }
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "q",
+        "display_name": "Query (Q)",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "k",
+        "display_name": "Key (K)",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "v",
+        "display_name": "Value (V)",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "mask",
+        "display_name": "Causal Mask",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Attention Output",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.tensor_input@1",
+    "version": 1,
+    "display_name": "Tensor Input",
+    "category": "Inputs",
+    "description": "Provides an external input tensor to the model graph.",
+    "icon": "LogIn",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": "input"
+        },
+        "dtype": {
+          "type": "string",
+          "enum": [
+            "float32",
+            "float16",
+            "bfloat16",
+            "int64",
+            "int32",
+            "bool"
+          ],
+          "default": "float32"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "default": [
+            {
+              "kind": "symbol",
+              "name": "B"
+            },
+            {
+              "kind": "symbol",
+              "name": "T"
+            },
+            {
+              "kind": "config_ref",
+              "key": "n_embd"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "default_inputs": [],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Output",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.linear@1",
+    "version": 1,
+    "display_name": "Linear",
+    "category": "Layers",
+    "description": "Applies an affine linear transformation: y = xA^T + b.",
+    "icon": "GitCommit",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "in_features": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "description": "Input dimension or config reference",
+          "default": 64
+        },
+        "out_features": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "description": "Output dimension or config reference",
+          "default": 64
+        },
+        "bias": {
+          "type": [
+            "boolean",
+            "object"
+          ],
+          "description": "Whether to include a learnable additive bias",
+          "default": true
+        }
+      },
+      "required": [
+        "in_features",
+        "out_features"
+      ]
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "input",
+        "display_name": "Input",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "output",
+        "display_name": "Output",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.gelu@1",
+    "version": 1,
+    "display_name": "GELU",
+    "category": "Layers",
+    "description": "Gaussian Error Linear Unit activation function.",
+    "icon": "Activity",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "approximate": {
+          "type": "string",
+          "enum": [
+            "none",
+            "tanh"
+          ],
+          "default": "none"
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Output",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.silu@1",
+    "version": 1,
+    "display_name": "SiLU",
+    "category": "Layers",
+    "description": "Sigmoid Linear Unit (Swish) activation function.",
+    "icon": "Activity",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Output",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.relu@1",
+    "version": 1,
+    "display_name": "ReLU",
+    "category": "Layers",
+    "description": "Rectified Linear Unit activation function.",
+    "icon": "Activity",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Output",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.add@1",
+    "version": 1,
+    "display_name": "Add (Residual)",
+    "category": "Tensor Operations",
+    "description": "Element-wise addition for tensor combination and residual connections.",
+    "icon": "Plus",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "a",
+        "display_name": "Input A",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "b",
+        "display_name": "Input B",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Output",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.graph_output@1",
+    "version": 1,
+    "display_name": "Graph Output",
+    "category": "Loss & Outputs",
+    "description": "Marks a terminal output of the model graph.",
+    "icon": "LogOut",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": "output"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": []
+  },
+  {
+    "type_id": "builtin.save_checkpoint@1",
+    "version": 1,
+    "display_name": "Save Checkpoint",
+    "category": "Persistence",
+    "description": "Saves model weights, optimizer state, and training metadata to disk.",
+    "icon": "Box",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "save_dir": {
+          "type": "string",
+          "default": "checkpoints"
+        },
+        "filename_prefix": {
+          "type": "string",
+          "default": "ckpt"
+        },
+        "save_optimizer": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "step",
+        "display_name": "Step",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "loss",
+        "display_name": "Loss",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "model",
+        "display_name": "Model",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "optimizer",
+        "display_name": "Optimizer",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "saved_path",
+        "display_name": "Saved Path",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.load_checkpoint@1",
+    "version": 1,
+    "display_name": "Restore Checkpoint",
+    "category": "Persistence",
+    "description": "Restores model weights and optimizer states from a saved checkpoint file.",
+    "icon": "RefreshCw",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "checkpoint_path": {
+          "type": "string",
+          "default": "checkpoints/ckpt_best.pt"
+        }
+      },
+      "required": [
+        "checkpoint_path"
+      ]
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "model",
+        "display_name": "Model",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "optimizer",
+        "display_name": "Optimizer",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "restored_step",
+        "display_name": "Restored Step",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "restored_loss",
+        "display_name": "Restored Loss",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.export_model@1",
+    "version": 1,
+    "display_name": "Export Model",
+    "category": "Persistence",
+    "description": "Exports trained model graph to ONNX, TorchScript, or SafeTensors format.",
+    "icon": "LogOut",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": [
+            "torchscript",
+            "onnx",
+            "safetensors"
+          ],
+          "default": "torchscript"
+        },
+        "output_path": {
+          "type": "string",
+          "default": "exports/model.pt"
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "model",
+        "display_name": "Model",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "exported_path",
+        "display_name": "Exported Path",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.nanogpt_input_embeddings@1",
+    "version": 1,
+    "display_name": "Input Embeddings",
+    "category": "Composite Modules",
+    "description": "Hierarchical composite module containing token and position embeddings with addition and dropout.",
+    "icon": "Layers",
+    "is_composite": true,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "tokens",
+        "display_name": "Tokens [B, T]",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Embeddings [B, T, C]",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.nanogpt_attention@1",
+    "version": 1,
+    "display_name": "Causal Self-Attention",
+    "category": "Composite Modules",
+    "description": "Hierarchical composite module for multi-head causal self-attention with fused QKV and output projection.",
+    "icon": "Zap",
+    "is_composite": true,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input [B, T, C]",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Output [B, T, C]",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.nanogpt_mlp@1",
+    "version": 1,
+    "display_name": "MLP",
+    "category": "Composite Modules",
+    "description": "Hierarchical composite module for transformer feed-forward network with 4xC expansion, GELU and projection.",
+    "icon": "Activity",
+    "is_composite": true,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input [B, T, C]",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Output [B, T, C]",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.nanogpt_block@1",
+    "version": 1,
+    "display_name": "Transformer Block",
+    "category": "Composite Modules",
+    "description": "Hierarchical composite module containing LayerNorm, Causal Attention, MLP, and dual residual add paths.",
+    "icon": "Box",
+    "is_composite": true,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input [B, T, C]",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Output [B, T, C]",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.nanogpt_stack@1",
+    "version": 1,
+    "display_name": "Transformer Stack",
+    "category": "Composite Modules",
+    "description": "Repeated stack executing N independent Transformer Block instances sequentially.",
+    "icon": "Layers",
+    "is_composite": true,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input [B, T, C]",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Output [B, T, C]",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.dataset_source@1",
+    "version": 1,
+    "display_name": "Dataset Source",
+    "category": "Data Pipelines",
+    "description": "Provides or generates training/validation dataset (HuggingFace, Disk, or Synthetic).",
+    "icon": "Box",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "dataset_name": {
+          "type": "string",
+          "default": "synthetic_shakespeare"
+        },
+        "split": {
+          "type": "string",
+          "enum": [
+            "train",
+            "val",
+            "test"
+          ],
+          "default": "train"
+        },
+        "synthetic": {
+          "type": "boolean",
+          "default": true
+        },
+        "num_samples": {
+          "type": "integer",
+          "default": 1000
+        },
+        "vocab_size": {
+          "type": "object",
+          "default": {
+            "kind": "config_ref",
+            "key": "vocab_size"
+          }
+        },
+        "sequence_length": {
+          "type": "object",
+          "default": {
+            "kind": "config_ref",
+            "key": "block_size"
+          }
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "dataset",
+        "display_name": "Dataset",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.bpe_tokenizer@1",
+    "version": 1,
+    "display_name": "BPE Tokenizer",
+    "category": "Data Pipelines",
+    "description": "Tokenizes raw string input into token id sequences using Byte-Pair Encoding.",
+    "icon": "Scissors",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "vocab_size": {
+          "type": "integer",
+          "default": 50257
+        },
+        "model_type": {
+          "type": "string",
+          "enum": [
+            "gpt2",
+            "tiktoken_cl100k",
+            "character"
+          ],
+          "default": "gpt2"
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "raw_text",
+        "display_name": "Raw Text",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "token_ids",
+        "display_name": "Token IDs",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": 2
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.batch_sampler@1",
+    "version": 1,
+    "display_name": "Batch Sampler",
+    "category": "Data Pipelines",
+    "description": "Samples batches of indices from a dataset with optional shuffling.",
+    "icon": "Columns",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "batch_size": {
+          "type": "object",
+          "default": {
+            "kind": "config_ref",
+            "key": "batch_size"
+          }
+        },
+        "shuffle": {
+          "type": "boolean",
+          "default": true
+        },
+        "drop_last": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "dataset",
+        "display_name": "Dataset",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "batch_indices",
+        "display_name": "Batch Indices",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": 1
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.dataloader@1",
+    "version": 1,
+    "display_name": "DataLoader",
+    "category": "Data Pipelines",
+    "description": "Constructs a PyTorch DataLoader yielding input/target batches (X, Y).",
+    "icon": "Box",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "batch_size": {
+          "type": "object",
+          "default": {
+            "kind": "config_ref",
+            "key": "batch_size"
+          }
+        },
+        "shuffle": {
+          "type": "boolean",
+          "default": true
+        },
+        "pin_memory": {
+          "type": "boolean",
+          "default": true
+        },
+        "num_workers": {
+          "type": "integer",
+          "default": 0
+        },
+        "drop_last": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "dataset",
+        "display_name": "Dataset",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "dataloader",
+        "display_name": "DataLoader",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "batch_x",
+        "display_name": "Batch X",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": 2
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "batch_y",
+        "display_name": "Batch Y",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": 2
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.data_augmentation@1",
+    "version": 1,
+    "display_name": "Data Augmentation",
+    "category": "Data Pipelines",
+    "description": "Applies stochastic data transformations or token masking.",
+    "icon": "Flame",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "augmentation_type": {
+          "type": "string",
+          "enum": [
+            "random_masking",
+            "random_crop",
+            "gaussian_noise"
+          ],
+          "default": "random_masking"
+        },
+        "p": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.15
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Output",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.token_input@1",
+    "version": 1,
+    "display_name": "Token IDs Input",
+    "category": "Inputs",
+    "description": "Provides discrete token IDs [B, T] to the language model.",
+    "icon": "Key",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": "token_ids"
+        },
+        "dtype": {
+          "type": "string",
+          "enum": [
+            "int64",
+            "int32"
+          ],
+          "default": "int64"
+        }
+      }
+    },
+    "default_inputs": [],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Token IDs",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": 2
+        },
+        "default_shape": [
+          {
+            "kind": "symbol",
+            "name": "B"
+          },
+          {
+            "kind": "symbol",
+            "name": "T"
+          }
+        ],
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.target_input@1",
+    "version": 1,
+    "display_name": "Targets Input",
+    "category": "Inputs",
+    "description": "Provides training target token IDs [B, T] for loss calculation.",
+    "icon": "Target",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": "targets"
+        },
+        "dtype": {
+          "type": "string",
+          "enum": [
+            "int64",
+            "int32"
+          ],
+          "default": "int64"
+        }
+      }
+    },
+    "default_inputs": [],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Targets",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": 2
+        },
+        "default_shape": [
+          {
+            "kind": "symbol",
+            "name": "B"
+          },
+          {
+            "kind": "symbol",
+            "name": "T"
+          }
+        ],
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.module_input@1",
+    "version": 1,
+    "display_name": "Module Input",
+    "category": "Inputs",
+    "description": "Receives a tensor passed from the parent graph into a composite module.",
+    "icon": "ArrowDownRight",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": "input"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "default_inputs": [],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Input",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.module_output@1",
+    "version": 1,
+    "display_name": "Module Output",
+    "category": "Loss & Outputs",
+    "description": "Exports an internal composite module tensor to the parent graph.",
+    "icon": "ArrowUpRight",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": "output"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Output",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": []
+  },
+  {
+    "type_id": "builtin.arange@1",
+    "version": 1,
+    "display_name": "Arange (Positions)",
+    "category": "Inputs",
+    "description": "Generates position index range [0, 1, ..., T-1] for learned positional embeddings.",
+    "icon": "ListOrdered",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "dtype": {
+          "type": "string",
+          "enum": [
+            "int64",
+            "int32"
+          ],
+          "default": "int64"
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "sequence_tensor",
+        "display_name": "Sequence Reference",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "positions",
+        "display_name": "Positions [T]",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": 1
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.causal_mask@1",
+    "version": 1,
+    "display_name": "Causal Mask",
+    "category": "Inputs",
+    "description": "Generates a lower-triangular causal attention mask ensuring autoregressive token attention.",
+    "icon": "Shield",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "block_size": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "block_size"
+          }
+        }
+      }
+    },
+    "default_inputs": [],
+    "default_outputs": [
+      {
+        "id": "mask",
+        "display_name": "Causal Mask",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "boolean",
+          "rank": 4
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.lm_head@1",
+    "version": 1,
+    "display_name": "LM Head",
+    "category": "Layers",
+    "description": "Projects final hidden states to vocabulary logits (tied with Token Embeddings in nanoGPT).",
+    "icon": "Terminal",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "in_features": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "n_embd"
+          }
+        },
+        "out_features": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "vocab_size"
+          }
+        },
+        "bias": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "in_features",
+        "out_features"
+      ]
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Hidden States [B, T, C]",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "logits",
+        "display_name": "Logits [B, T, V]",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.cross_entropy_loss@1",
+    "version": 1,
+    "display_name": "Cross-Entropy Loss",
+    "category": "Loss & Outputs",
+    "description": "Calculates multi-class classification cross-entropy loss with ignore_index = -1.",
+    "icon": "Flame",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "ignore_index": {
+          "type": "integer",
+          "default": -1
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "logits",
+        "display_name": "Logits",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "targets",
+        "display_name": "Targets",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "loss",
+        "display_name": "Scalar Loss",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.logits_output@1",
+    "version": 1,
+    "display_name": "Logits Output",
+    "category": "Loss & Outputs",
+    "description": "Marks the model's vocabulary logits prediction output.",
+    "icon": "LogOut",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Logits",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": []
+  },
+  {
+    "type_id": "builtin.loss_output@1",
+    "version": 1,
+    "display_name": "Loss Output",
+    "category": "Loss & Outputs",
+    "description": "Marks the scalar training loss output.",
+    "icon": "Activity",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Loss",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": []
+  },
+  {
+    "type_id": "builtin.loss_aggregator@1",
+    "version": 1,
+    "display_name": "Accumulate Metrics",
+    "category": "Metrics & Evaluation",
+    "description": "Computes running moving average of scalar batch losses.",
+    "icon": "PieChart",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "window_size": {
+          "type": "integer",
+          "default": 20
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "loss",
+        "display_name": "Loss",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "avg_loss",
+        "display_name": "Average Loss",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.accuracy_metric@1",
+    "version": 1,
+    "display_name": "Accuracy Metric",
+    "category": "Metrics & Evaluation",
+    "description": "Calculates top-1 or top-k categorical prediction accuracy.",
+    "icon": "Target",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "top_k": {
+          "type": "integer",
+          "default": 1
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "logits",
+        "display_name": "Logits",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "targets",
+        "display_name": "Targets",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "accuracy",
+        "display_name": "Accuracy",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.perplexity_metric@1",
+    "version": 1,
+    "display_name": "Perplexity Metric",
+    "category": "Metrics & Evaluation",
+    "description": "Calculates language model perplexity as exp(cross_entropy_loss).",
+    "icon": "Activity",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "loss",
+        "display_name": "Loss",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "perplexity",
+        "display_name": "Perplexity",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.metric_logger@1",
+    "version": 1,
+    "display_name": "Metric Logger",
+    "category": "Metrics & Evaluation",
+    "description": "Logs scalars, learning rates, and losses to console, live graphs, and TensorBoard.",
+    "icon": "Terminal",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "log_interval": {
+          "type": "integer",
+          "default": 10
+        },
+        "tag": {
+          "type": "string",
+          "default": "train"
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "step",
+        "display_name": "Step",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "loss",
+        "display_name": "Loss",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "metrics",
+        "display_name": "Metrics",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.validation_loop@1",
+    "version": 1,
+    "display_name": "Validation Loop",
+    "category": "Metrics & Evaluation",
+    "description": "Executes evaluation loop over validation dataloader with torch.no_grad().",
+    "icon": "RefreshCw",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "max_val_batches": {
+          "type": "integer",
+          "default": 20
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "val_dataloader",
+        "display_name": "Val DataLoader",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "loop_body",
+        "display_name": "Loop Body",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "completed",
+        "display_name": "Completed",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "batch_x",
+        "display_name": "Batch X",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "batch_y",
+        "display_name": "Batch Y",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.embedding@1",
+    "version": 1,
+    "display_name": "Embedding",
+    "category": "Layers",
+    "description": "Maps discrete indices to dense learned continuous representation vectors.",
+    "icon": "Layers",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "num_embeddings": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "description": "Vocabulary size or block size",
+          "default": {
+            "kind": "config_ref",
+            "key": "vocab_size"
+          }
+        },
+        "embedding_dim": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "description": "Embedding channel dimensionality",
+          "default": {
+            "kind": "config_ref",
+            "key": "n_embd"
+          }
+        }
+      },
+      "required": [
+        "num_embeddings",
+        "embedding_dim"
+      ]
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "input",
+        "display_name": "Indices",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "output",
+        "display_name": "Embeddings",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.layernorm@1",
+    "version": 1,
+    "display_name": "LayerNorm",
+    "category": "Layers",
+    "description": "Normalizes activations across channels with optional learnable affine gain and bias.",
+    "icon": "Sliders",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "normalized_shape": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "n_embd"
+          }
+        },
+        "bias": {
+          "type": [
+            "boolean",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "bias"
+          }
+        },
+        "eps": {
+          "type": "number",
+          "default": 1e-05
+        }
+      },
+      "required": [
+        "normalized_shape"
+      ]
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Normalized",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.dropout@1",
+    "version": 1,
+    "display_name": "Dropout",
+    "category": "Layers",
+    "description": "Randomly zeroes elements with probability p during training for regularization.",
+    "icon": "Percent",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "dropout": {
+          "type": [
+            "number",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "dropout"
+          }
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Output",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.adamw_optimizer@1",
+    "version": 1,
+    "display_name": "AdamW Optimizer",
+    "category": "Optimization",
+    "description": "Instantiates an AdamW optimizer with decoupled weight decay.",
+    "icon": "Sliders",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "learning_rate": {
+          "type": "number",
+          "default": 0.0006
+        },
+        "beta1": {
+          "type": "number",
+          "default": 0.9
+        },
+        "beta2": {
+          "type": "number",
+          "default": 0.95
+        },
+        "eps": {
+          "type": "number",
+          "default": 1e-08
+        },
+        "weight_decay": {
+          "type": "number",
+          "default": 0.1
+        },
+        "fused": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "params",
+        "display_name": "Parameters",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "optimizer",
+        "display_name": "Optimizer",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.sgd_optimizer@1",
+    "version": 1,
+    "display_name": "SGD Optimizer",
+    "category": "Optimization",
+    "description": "Instantiates a Stochastic Gradient Descent optimizer with momentum.",
+    "icon": "Sliders",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "learning_rate": {
+          "type": "number",
+          "default": 0.01
+        },
+        "momentum": {
+          "type": "number",
+          "default": 0.9
+        },
+        "weight_decay": {
+          "type": "number",
+          "default": 0.0
+        },
+        "nesterov": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "params",
+        "display_name": "Parameters",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "optimizer",
+        "display_name": "Optimizer",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.lion_optimizer@1",
+    "version": 1,
+    "display_name": "Lion Optimizer",
+    "category": "Optimization",
+    "description": "Instantiates the EvoLved Sign Momentum (Lion) optimizer.",
+    "icon": "Sliders",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "learning_rate": {
+          "type": "number",
+          "default": 0.0001
+        },
+        "beta1": {
+          "type": "number",
+          "default": 0.9
+        },
+        "beta2": {
+          "type": "number",
+          "default": 0.99
+        },
+        "weight_decay": {
+          "type": "number",
+          "default": 0.1
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "params",
+        "display_name": "Parameters",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "optimizer",
+        "display_name": "Optimizer",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.clip_gradients@1",
+    "version": 1,
+    "display_name": "Clip Gradients",
+    "category": "Optimization",
+    "description": "Clips gradient norms of model parameters to prevent gradient explosions.",
+    "icon": "Scissors",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "max_norm": {
+          "type": "number",
+          "minimum": 0.0,
+          "default": 1.0
+        },
+        "norm_type": {
+          "type": "number",
+          "default": 2.0
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "params",
+        "display_name": "Parameters",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "total_norm",
+        "display_name": "Total Norm",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.zero_grad@1",
+    "version": 1,
+    "display_name": "Zero Grad",
+    "category": "Optimization",
+    "description": "Zeros the gradients of all optimized model parameters.",
+    "icon": "RefreshCw",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "set_to_none": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "optimizer",
+        "display_name": "Optimizer",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.optimizer_step@1",
+    "version": 1,
+    "display_name": "Optimizer Step",
+    "category": "Optimization",
+    "description": "Performs a single parameter optimization step.",
+    "icon": "Zap",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "optimizer",
+        "display_name": "Optimizer",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.backward@1",
+    "version": 1,
+    "display_name": "Backward",
+    "category": "Optimization",
+    "description": "Computes the gradient of current tensor graph w.r.t. graph leaves via Autograd.",
+    "icon": "Flame",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "loss",
+        "display_name": "Loss",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.autocast_scope@1",
+    "version": 1,
+    "display_name": "Autocast Scope",
+    "category": "Optimization",
+    "description": "Enables automatic mixed precision (AMP) context for enclosed forward pass.",
+    "icon": "Shield",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "device_type": {
+          "type": "string",
+          "enum": [
+            "cpu",
+            "cuda",
+            "mps"
+          ],
+          "default": "cuda"
+        },
+        "dtype": {
+          "type": "string",
+          "enum": [
+            "fp16",
+            "bf16",
+            "fp8"
+          ],
+          "default": "bf16"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.grad_scaler@1",
+    "version": 1,
+    "display_name": "Grad Scaler",
+    "category": "Optimization",
+    "description": "Instantiates a PyTorch GradScaler for fp16 loss scaling and dynamic growth.",
+    "icon": "Sliders",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "init_scale": {
+          "type": "number",
+          "default": 65536.0
+        },
+        "growth_factor": {
+          "type": "number",
+          "default": 2.0
+        },
+        "backoff_factor": {
+          "type": "number",
+          "default": 0.5
+        },
+        "growth_interval": {
+          "type": "integer",
+          "default": 2000
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "default_inputs": [],
+    "default_outputs": [
+      {
+        "id": "scaler",
+        "display_name": "Scaler",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.cosine_annealing_lr@1",
+    "version": 1,
+    "display_name": "Cosine Decay with Warmup",
+    "category": "LR Schedulers",
+    "description": "Schedules learning rate using linear warmup followed by cosine annealing decay.",
+    "icon": "Activity",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "warmup_steps": {
+          "type": "integer",
+          "default": 20
+        },
+        "total_steps": {
+          "type": "integer",
+          "default": 1000
+        },
+        "eta_min": {
+          "type": "number",
+          "default": 1e-05
+        },
+        "min_lr_ratio": {
+          "type": "number",
+          "default": 0.1
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "optimizer",
+        "display_name": "Optimizer",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "current_lr",
+        "display_name": "Current LR",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.linear_warmup_scheduler@1",
+    "version": 1,
+    "display_name": "Linear Decay",
+    "category": "LR Schedulers",
+    "description": "Schedules learning rate using linear warmup followed by linear decay to zero.",
+    "icon": "Activity",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "warmup_steps": {
+          "type": "integer",
+          "default": 50
+        },
+        "total_steps": {
+          "type": "integer",
+          "default": 1000
+        },
+        "min_lr_ratio": {
+          "type": "number",
+          "default": 0.0
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "optimizer",
+        "display_name": "Optimizer",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "current_lr",
+        "display_name": "Current LR",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.reduce_lr_on_plateau@1",
+    "version": 1,
+    "display_name": "Reduce LR On Plateau",
+    "category": "LR Schedulers",
+    "description": "Reduces learning rate when a metric (e.g. val_loss) has stopped improving.",
+    "icon": "Activity",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "min",
+            "max"
+          ],
+          "default": "min"
+        },
+        "factor": {
+          "type": "number",
+          "default": 0.5
+        },
+        "patience": {
+          "type": "integer",
+          "default": 3
+        },
+        "min_lr": {
+          "type": "number",
+          "default": 1e-06
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "val_loss",
+        "display_name": "Val Loss",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "optimizer",
+        "display_name": "Optimizer",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "current_lr",
+        "display_name": "Current LR",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.step_lr@1",
+    "version": 1,
+    "display_name": "Step LR",
+    "category": "LR Schedulers",
+    "description": "Decays learning rate by gamma every step_size epochs.",
+    "icon": "Activity",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "step_size": {
+          "type": "integer",
+          "default": 30
+        },
+        "gamma": {
+          "type": "number",
+          "default": 0.1
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "optimizer",
+        "display_name": "Optimizer",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "current_lr",
+        "display_name": "Current LR",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.reshape@1",
+    "version": 1,
+    "display_name": "Reshape (View)",
+    "category": "Tensor Operations",
+    "description": "Reshapes a tensor to target dimensions.",
+    "icon": "Maximize2",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "shape": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "default": []
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Reshaped",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.split@1",
+    "version": 1,
+    "display_name": "Split",
+    "category": "Tensor Operations",
+    "description": "Splits a tensor into chunks along a specified dimension.",
+    "icon": "Scissors",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "split_size": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "default": 64
+        },
+        "dim": {
+          "type": "integer",
+          "default": -1
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "chunk_0",
+        "display_name": "Chunk 0",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "chunk_1",
+        "display_name": "Chunk 1",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.transpose@1",
+    "version": 1,
+    "display_name": "Transpose",
+    "category": "Tensor Operations",
+    "description": "Swaps two dimensions in a tensor: e.g. (B, T, NH, HD) -> (B, NH, T, HD).",
+    "icon": "RefreshCw",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "dim0": {
+          "type": "integer",
+          "default": 1
+        },
+        "dim1": {
+          "type": "integer",
+          "default": 2
+        }
+      },
+      "required": [
+        "dim0",
+        "dim1"
+      ]
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Transposed",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.contiguous@1",
+    "version": 1,
+    "display_name": "Contiguous",
+    "category": "Tensor Operations",
+    "description": "Ensures tensor memory layout is contiguous before reshaping.",
+    "icon": "Box",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Contiguous",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.matmul@1",
+    "version": 1,
+    "display_name": "Matrix Multiply",
+    "category": "Tensor Operations",
+    "description": "Computes matrix multiplication: a @ b.",
+    "icon": "X",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "transpose_b": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "a",
+        "display_name": "Matrix A",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "b",
+        "display_name": "Matrix B",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Product",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.scale@1",
+    "version": 1,
+    "display_name": "Scale",
+    "category": "Tensor Operations",
+    "description": "Scales a tensor by a constant multiplier (e.g. 1 / sqrt(head_dim)).",
+    "icon": "Divide",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "scale": {
+          "type": [
+            "number",
+            "object"
+          ],
+          "default": 1.0
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Scaled",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.masked_fill@1",
+    "version": 1,
+    "display_name": "Masked Fill",
+    "category": "Tensor Operations",
+    "description": "Replaces tensor elements with a fill value where mask condition is false.",
+    "icon": "Filter",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number",
+          "default": -Infinity
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Scores",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "mask",
+        "display_name": "Causal Mask",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Masked Scores",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.softmax@1",
+    "version": 1,
+    "display_name": "Softmax",
+    "category": "Tensor Operations",
+    "description": "Normalizes logits to probability distribution along specified dimension.",
+    "icon": "PieChart",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "dim": {
+          "type": "integer",
+          "default": -1
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Probabilities",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.select_time_step@1",
+    "version": 1,
+    "display_name": "Select Time Step",
+    "category": "Tensor Operations",
+    "description": "Selects a specific sequence index (e.g. index -1 for inference LM Head optimization [B, 1, C]).",
+    "icon": "Crosshair",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "integer",
+          "default": -1
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Hidden States [B, T, C]",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Selected Step [B, 1, C]",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.flatten@1",
+    "version": 1,
+    "display_name": "Flatten Dimensions",
+    "category": "Tensor Operations",
+    "description": "Flattens leading dimensions into a batch dimension (e.g. [B, T, V] -> [B*T, V]).",
+    "icon": "Minimize2",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "start_dim": {
+          "type": "integer",
+          "default": 0
+        },
+        "end_dim": {
+          "type": "integer",
+          "default": -2
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Flattened",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.training_sequence@1",
+    "version": 1,
+    "display_name": "Sequence",
+    "category": "Flow Control",
+    "description": "Executes connected execution branches sequentially from top to bottom.",
+    "icon": "ListOrdered",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "branch_count": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 8,
+          "default": 3
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "then_0",
+        "display_name": "Then 0",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "then_1",
+        "display_name": "Then 1",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "then_2",
+        "display_name": "Then 2",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.epoch_loop@1",
+    "version": 1,
+    "display_name": "Epoch Loop",
+    "category": "Flow Control",
+    "description": "Iterates training across a configured number of epochs.",
+    "icon": "RefreshCw",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "num_epochs": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 10
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "num_epochs",
+        "display_name": "Num Epochs",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "loop_body",
+        "display_name": "Loop Body",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "completed",
+        "display_name": "Completed",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "current_epoch",
+        "display_name": "Current Epoch",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.batch_loop@1",
+    "version": 1,
+    "display_name": "Batch Loop",
+    "category": "Flow Control",
+    "description": "Iterates over batches yielded by a DataLoader.",
+    "icon": "RefreshCw",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "max_steps": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "dataloader",
+        "display_name": "DataLoader",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "loop_body",
+        "display_name": "Loop Body",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "completed",
+        "display_name": "Completed",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "batch_x",
+        "display_name": "Batch X",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "batch_y",
+        "display_name": "Batch Y",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "batch_idx",
+        "display_name": "Batch Index",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.validation_branch@1",
+    "version": 1,
+    "display_name": "Validation Branch",
+    "category": "Flow Control",
+    "description": "Branches execution periodically based on step/epoch interval.",
+    "icon": "GitFork",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "interval": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 50
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "step",
+        "display_name": "Step",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "on_eval",
+        "display_name": "On Eval",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "skip_eval",
+        "display_name": "Skip",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "should_eval",
+        "display_name": "Should Eval",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "boolean",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.early_stopping_gate@1",
+    "version": 1,
+    "display_name": "Early Stopping Gate",
+    "category": "Flow Control",
+    "description": "Tracks validation loss and signals execution termination if patience is exhausted.",
+    "icon": "Shield",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "patience": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 5
+        },
+        "min_delta": {
+          "type": "number",
+          "minimum": 0.0,
+          "default": 0.001
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "val_loss",
+        "display_name": "Val Loss",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "continue_exec",
+        "display_name": "Continue",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "stop_exec",
+        "display_name": "Stop",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "is_best",
+        "display_name": "Is Best",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "boolean",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.branch@1",
+    "version": 1,
+    "display_name": "Branch",
+    "category": "Flow Control",
+    "description": "Branches execution conditionally based on a boolean condition.",
+    "icon": "GitFork",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "condition",
+        "display_name": "Condition",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "boolean",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "true_branch",
+        "display_name": "True",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "false_branch",
+        "display_name": "False",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.do_once@1",
+    "version": 1,
+    "display_name": "Do Once",
+    "category": "Flow Control",
+    "description": "Executes the output branch only once until reset.",
+    "icon": "Zap",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "reset",
+        "display_name": "Reset",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Out",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.while_loop@1",
+    "version": 1,
+    "display_name": "While Loop",
+    "category": "Flow Control",
+    "description": "Executes loop body repeatedly while condition evaluates to true.",
+    "icon": "RefreshCw",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "condition",
+        "display_name": "Condition",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "boolean",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "loop_body",
+        "display_name": "Loop Body",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "completed",
+        "display_name": "Completed",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.for_loop@1",
+    "version": 1,
+    "display_name": "For Loop",
+    "category": "Flow Control",
+    "description": "Iterates over a range from first_index to last_index.",
+    "icon": "RefreshCw",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "first_index": {
+          "type": "integer",
+          "default": 0
+        },
+        "last_index": {
+          "type": "integer",
+          "default": 10
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "first_index",
+        "display_name": "First Index",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "last_index",
+        "display_name": "Last Index",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "loop_body",
+        "display_name": "Loop Body",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "completed",
+        "display_name": "Completed",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "index",
+        "display_name": "Index",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.event_on_train_begin@1",
+    "version": 1,
+    "display_name": "Event OnTrainBegin",
+    "category": "Events",
+    "description": "Fires at the start of a training session.",
+    "icon": "Flame",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.event_on_epoch_start@1",
+    "version": 1,
+    "display_name": "Event OnEpochStart",
+    "category": "Events",
+    "description": "Fires at the start of each training epoch.",
+    "icon": "Flame",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "epoch",
+        "display_name": "Epoch",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.event_on_batch_end@1",
+    "version": 1,
+    "display_name": "Event OnBatchEnd",
+    "category": "Events",
+    "description": "Fires after each batch optimization step is completed.",
+    "icon": "Flame",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "step",
+        "display_name": "Step",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "loss",
+        "display_name": "Loss",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "lr",
+        "display_name": "LR",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.event_on_validation@1",
+    "version": 1,
+    "display_name": "Event OnValidation",
+    "category": "Events",
+    "description": "Fires upon completion of a validation pass.",
+    "icon": "Flame",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "epoch",
+        "display_name": "Epoch",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "val_loss",
+        "display_name": "Val Loss",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.event_on_checkpoint@1",
+    "version": 1,
+    "display_name": "Event OnCheckpoint",
+    "category": "Events",
+    "description": "Fires when a model/optimizer checkpoint is saved to disk.",
+    "icon": "Flame",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "step",
+        "display_name": "Step",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.event_on_anomaly@1",
+    "version": 1,
+    "display_name": "Event OnAnomalyDetected",
+    "category": "Events",
+    "description": "Fires when NaN/Inf or exploding gradients are detected during training.",
+    "icon": "Flame",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "nan_count",
+        "display_name": "NaN Count",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": 0
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.get_variable@1",
+    "version": 1,
+    "display_name": "Get Variable",
+    "category": "Variables",
+    "description": "Retrieves the current value of a Blueprint variable.",
+    "icon": "Key",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "variable_name": {
+          "type": "string",
+          "default": "learning_rate"
+        }
+      },
+      "required": [
+        "variable_name"
+      ]
+    },
+    "default_inputs": [],
+    "default_outputs": [
+      {
+        "id": "value",
+        "display_name": "value",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "any",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.set_variable@1",
+    "version": 1,
+    "display_name": "Set Variable",
+    "category": "Variables",
+    "description": "Assigns a new value to a Blueprint variable and passes execution.",
+    "icon": "Key",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "variable_name": {
+          "type": "string",
+          "default": "learning_rate"
+        }
+      },
+      "required": [
+        "variable_name"
+      ]
+    },
+    "default_inputs": [
+      {
+        "id": "exec_in",
+        "display_name": "Exec",
+        "direction": "input",
+        "kind": "exec",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "value",
+        "display_name": "value",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "any",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "exec_out",
+        "display_name": "Exec",
+        "direction": "output",
+        "kind": "exec",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "value",
+        "display_name": "Value",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "any",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  }
+]

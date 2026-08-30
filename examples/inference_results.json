@@ -1,0 +1,566 @@
+{
+  "total": 25,
+  "passed": 25,
+  "failed": 0,
+  "results": [
+    {
+      "id": "arch_1_nanogpt_tiny",
+      "name": "Arch 1: nanoGPT Tiny",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 2,
+      "outputs": [
+        {
+          "key": "logits",
+          "shape": [
+            8,
+            8,
+            32
+          ],
+          "dtype": "float32"
+        },
+        {
+          "key": "loss",
+          "shape": [],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 474.32,
+      "error": null
+    },
+    {
+      "id": "arch_2_nanogpt_deep",
+      "name": "Arch 2: nanoGPT Deep (6L)",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 2,
+      "outputs": [
+        {
+          "key": "logits",
+          "shape": [
+            4,
+            16,
+            64
+          ],
+          "dtype": "float32"
+        },
+        {
+          "key": "loss",
+          "shape": [],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 11.35,
+      "error": null
+    },
+    {
+      "id": "arch_3_nanogpt_wide",
+      "name": "Arch 3: nanoGPT Wide (1L/8H)",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 2,
+      "outputs": [
+        {
+          "key": "logits",
+          "shape": [
+            16,
+            32,
+            128
+          ],
+          "dtype": "float32"
+        },
+        {
+          "key": "loss",
+          "shape": [],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 7.61,
+      "error": null
+    },
+    {
+      "id": "arch_4_twolayer_mlp",
+      "name": "Arch 4: Two-Layer MLP",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 1,
+      "outputs": [
+        {
+          "key": "output",
+          "shape": [
+            16,
+            64
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 3.96,
+      "error": null
+    },
+    {
+      "id": "arch_5_bottleneck_mlp",
+      "name": "Arch 5: Bottleneck Autoencoder",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 1,
+      "outputs": [
+        {
+          "key": "output",
+          "shape": [
+            8,
+            128
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 6.29,
+      "error": null
+    },
+    {
+      "id": "arch_6_manual_attn",
+      "name": "Arch 6: Manual Attention Transformer",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 2,
+      "outputs": [
+        {
+          "key": "logits",
+          "shape": [
+            6,
+            12,
+            48
+          ],
+          "dtype": "float32"
+        },
+        {
+          "key": "loss",
+          "shape": [],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 5.21,
+      "error": null
+    },
+    {
+      "id": "arch_7_dual_flow",
+      "name": "Arch 7: Dual-Flow Pipeline",
+      "status": "ok",
+      "mode": "interpreter",
+      "output_count": 1,
+      "outputs": [
+        {
+          "key": "logits",
+          "shape": [
+            8,
+            8,
+            32
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 1.33,
+      "error": null
+    },
+    {
+      "id": "arch_8_resmlp",
+      "name": "Arch 8: ResMLP Residual Network",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 1,
+      "outputs": [
+        {
+          "key": "output",
+          "shape": [
+            12,
+            4
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 2.89,
+      "error": null
+    },
+    {
+      "id": "arch_9_multihead",
+      "name": "Arch 9: Multi-Head Projection",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 1,
+      "outputs": [
+        {
+          "key": "output",
+          "shape": [
+            10,
+            1,
+            40
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 3.59,
+      "error": null
+    },
+    {
+      "id": "arch_10_multitask",
+      "name": "Arch 10: Multi-Task Joint Network",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 2,
+      "outputs": [
+        {
+          "key": "lm_logits",
+          "shape": [
+            8,
+            8,
+            64
+          ],
+          "dtype": "float32"
+        },
+        {
+          "key": "cls_logits",
+          "shape": [
+            8,
+            8,
+            2
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 1.73,
+      "error": null
+    },
+    {
+      "id": "arch_11_relu_classifier",
+      "name": "Arch 11: ReLU Classifier MLP",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 1,
+      "outputs": [
+        {
+          "key": "output",
+          "shape": [
+            8,
+            48
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 50.55,
+      "error": null
+    },
+    {
+      "id": "arch_12_dropout_mlp",
+      "name": "Arch 12: Dropout MLP",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 1,
+      "outputs": [
+        {
+          "key": "output",
+          "shape": [
+            8,
+            32
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 3.6,
+      "error": null
+    },
+    {
+      "id": "arch_13_deep_tower",
+      "name": "Arch 13: Deep MLP Tower",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 1,
+      "outputs": [
+        {
+          "key": "output",
+          "shape": [
+            8,
+            48
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 3.5,
+      "error": null
+    },
+    {
+      "id": "arch_14_wide_deep",
+      "name": "Arch 14: Wide-and-Deep Network",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 1,
+      "outputs": [
+        {
+          "key": "output",
+          "shape": [
+            8,
+            16
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 2.94,
+      "error": null
+    },
+    {
+      "id": "arch_15_tied_lm",
+      "name": "Arch 15: Tied-Embedding LM",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 1,
+      "outputs": [
+        {
+          "key": "output",
+          "shape": [
+            8,
+            8,
+            48
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 1.54,
+      "error": null
+    },
+    {
+      "id": "arch_16_warmup_pipeline",
+      "name": "Arch 16: Warmup Scheduler Pipeline",
+      "status": "ok",
+      "mode": "interpreter",
+      "output_count": 1,
+      "outputs": [
+        {
+          "key": "logits",
+          "shape": [
+            8,
+            8,
+            32
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 1.25,
+      "error": null
+    },
+    {
+      "id": "arch_17_step_lr_pipeline",
+      "name": "Arch 17: Step-LR Decay Pipeline",
+      "status": "ok",
+      "mode": "interpreter",
+      "output_count": 1,
+      "outputs": [
+        {
+          "key": "logits",
+          "shape": [
+            8,
+            8,
+            32
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 1.49,
+      "error": null
+    },
+    {
+      "id": "arch_18_prenorm_mlp",
+      "name": "Arch 18: Pre-LayerNorm MLP",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 1,
+      "outputs": [
+        {
+          "key": "output",
+          "shape": [
+            8,
+            64
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 3.76,
+      "error": null
+    },
+    {
+      "id": "arch_19_residual_add",
+      "name": "Arch 19: Residual Add MLP",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 1,
+      "outputs": [
+        {
+          "key": "output",
+          "shape": [
+            8,
+            48
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 2.89,
+      "error": null
+    },
+    {
+      "id": "arch_20_binary_cls",
+      "name": "Arch 20: Binary Sequence Classifier",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 1,
+      "outputs": [
+        {
+          "key": "output",
+          "shape": [
+            8,
+            8,
+            2
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 0.99,
+      "error": null
+    },
+    {
+      "id": "arch_21_dropout_gpt",
+      "name": "Arch 21: High-Dropout Transformer",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 2,
+      "outputs": [
+        {
+          "key": "logits",
+          "shape": [
+            8,
+            12,
+            48
+          ],
+          "dtype": "float32"
+        },
+        {
+          "key": "loss",
+          "shape": [],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 4.84,
+      "error": null
+    },
+    {
+      "id": "arch_22_bf16_gpt",
+      "name": "Arch 22: BF16 nanoGPT Micro",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 2,
+      "outputs": [
+        {
+          "key": "logits",
+          "shape": [
+            8,
+            8,
+            32
+          ],
+          "dtype": "float32"
+        },
+        {
+          "key": "loss",
+          "shape": [],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 5.18,
+      "error": null
+    },
+    {
+      "id": "arch_23_single_block",
+      "name": "Arch 23: Single-Block Causal GPT",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 2,
+      "outputs": [
+        {
+          "key": "logits",
+          "shape": [
+            8,
+            16,
+            64
+          ],
+          "dtype": "float32"
+        },
+        {
+          "key": "loss",
+          "shape": [],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 4.02,
+      "error": null
+    },
+    {
+      "id": "arch_24_silu_ffn",
+      "name": "Arch 24: SiLU Deep Feedforward",
+      "status": "ok",
+      "mode": "whole_graph",
+      "output_count": 1,
+      "outputs": [
+        {
+          "key": "output",
+          "shape": [
+            8,
+            32
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 2.19,
+      "error": null
+    },
+    {
+      "id": "arch_25_metric_pipeline",
+      "name": "Arch 25: Metric Logger Pipeline",
+      "status": "ok",
+      "mode": "interpreter",
+      "output_count": 1,
+      "outputs": [
+        {
+          "key": "logits",
+          "shape": [
+            8,
+            8,
+            32
+          ],
+          "dtype": "float32"
+        }
+      ],
+      "finite": true,
+      "duration_ms": 1.12,
+      "error": null
+    }
+  ]
+}

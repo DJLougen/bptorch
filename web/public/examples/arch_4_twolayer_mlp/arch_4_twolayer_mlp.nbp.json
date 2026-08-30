@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "project": {
+    "id": "arch_4_twolayer_mlp",
+    "name": "Arch 4: Two-Layer MLP",
+    "created_at": "2026-08-18T00:00:00Z",
+    "updated_at": "2026-08-18T00:00:00Z"
+  },
+  "model": {
+    "root_graph_id": "graph_mlp",
+    "config": {
+      "n_embd": 64,
+      "n_hidden": 256,
+      "activation": "gelu"
+    },
+    "training": {
+      "device": "cpu",
+      "precision": "fp32",
+      "ddp_enabled": false,
+      "seed": 777,
+      "max_epochs": 10,
+      "max_steps": 50,
+      "learning_rate": 0.01,
+      "weight_decay": 0.0001,
+      "grad_accum_steps": 1,
+      "grad_clip": 2.0,
+      "batch_size": 16,
+      "checkpoint_interval": 100,
+      "eval_interval": 50
+    },
+    "graphs": {
+      "graph_mlp": {
+        "id": "graph_mlp",
+        "name": "Two-Layer MLP",
+        "kind": "root",
+        "interface": {
+          "inputs": [],
+          "outputs": []
+        },
+        "variables": [],
+        "nodes": [
+          {
+            "id": "node_in",
+            "definition_id": "builtin.tensor_input@1",
+            "display_name": "Input",
+            "properties": {
+              "name": "input"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_fc1",
+            "definition_id": "builtin.linear@1",
+            "display_name": "FC1",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "n_hidden"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_act",
+            "definition_id": "builtin.gelu@1",
+            "display_name": "GELU",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_fc2",
+            "definition_id": "builtin.linear@1",
+            "display_name": "FC2",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "n_hidden"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_out",
+            "definition_id": "builtin.graph_output@1",
+            "display_name": "Output",
+            "properties": {
+              "name": "output"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": {
+              "node_id": "node_in",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_fc1",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e2",
+            "source": {
+              "node_id": "node_fc1",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_act",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e3",
+            "source": {
+              "node_id": "node_act",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_fc2",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e4",
+            "source": {
+              "node_id": "node_fc2",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_out",
+              "port_id": "input"
+            }
+          }
+        ],
+        "repeat_count": null,
+        "target_graph_id": null
+      }
+    },
+    "weight_bindings": []
+  },
+  "ui": {
+    "graph_viewports": {
+      "graph_mlp": {
+        "x": 0.0,
+        "y": 0.0,
+        "zoom": 1.0
+      }
+    },
+    "node_positions": {
+      "graph_mlp": {
+        "node_in": {
+          "x": 100.0,
+          "y": 100.0
+        },
+        "node_fc1": {
+          "x": 350.0,
+          "y": 100.0
+        },
+        "node_act": {
+          "x": 600.0,
+          "y": 100.0
+        },
+        "node_fc2": {
+          "x": 850.0,
+          "y": 100.0
+        },
+        "node_out": {
+          "x": 1100.0,
+          "y": 100.0
+        }
+      }
+    },
+    "open_graph_id": "graph_mlp"
+  }
+}

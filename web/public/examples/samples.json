@@ -1,0 +1,415 @@
+{
+  "version": 1,
+  "title": "Neural Blueprint Sample Gallery",
+  "description": "25 trainable architecture demonstrations showcasing the diversity of visual blueprint programming.",
+  "count": 25,
+  "samples": [
+    {
+      "id": "arch_1_nanogpt_tiny",
+      "name": "Arch 1: nanoGPT Tiny",
+      "category": "Transformers",
+      "description": "Canonical tiny GPT with hierarchical subgraphs: embeddings, blocks, attention, and LM head.",
+      "highlight": "Best starting point for exploring compositional transformer blueprints.",
+      "tags": [
+        "transformer",
+        "nanogpt",
+        "hierarchical",
+        "sdpa"
+      ],
+      "difficulty": "beginner",
+      "path": "/examples/arch_1_nanogpt_tiny/arch_1_nanogpt_tiny.nbp.json",
+      "node_count": 52,
+      "graph_count": 7
+    },
+    {
+      "id": "arch_2_nanogpt_deep",
+      "name": "Arch 2: nanoGPT Deep (6L)",
+      "category": "Transformers",
+      "description": "Six-layer transformer stack for studying depth scaling and gradient flow.",
+      "highlight": "Shows how repeat stacks compose deep models from reusable block subgraphs.",
+      "tags": [
+        "transformer",
+        "deep",
+        "stack"
+      ],
+      "difficulty": "intermediate",
+      "path": "/examples/arch_2_nanogpt_deep/arch_2_nanogpt_deep.nbp.json",
+      "node_count": 52,
+      "graph_count": 7
+    },
+    {
+      "id": "arch_3_nanogpt_wide",
+      "name": "Arch 3: nanoGPT Wide (1L/8H)",
+      "category": "Transformers",
+      "description": "Single-layer, eight-head wide transformer emphasizing parallel attention heads.",
+      "highlight": "Demonstrates width-vs-depth tradeoffs in a compact blueprint.",
+      "tags": [
+        "transformer",
+        "wide",
+        "multi-head"
+      ],
+      "difficulty": "intermediate",
+      "path": "/examples/arch_3_nanogpt_wide/arch_3_nanogpt_wide.nbp.json",
+      "node_count": 52,
+      "graph_count": 7
+    },
+    {
+      "id": "arch_4_twolayer_mlp",
+      "name": "Arch 4: Two-Layer MLP",
+      "category": "Feedforward",
+      "description": "Classic two-layer perceptron with GELU activation for tabular/feature tasks.",
+      "highlight": "Simplest trainable blueprint \u2014 ideal for first edits and property tuning.",
+      "tags": [
+        "mlp",
+        "gelu",
+        "classification"
+      ],
+      "difficulty": "beginner",
+      "path": "/examples/arch_4_twolayer_mlp/arch_4_twolayer_mlp.nbp.json",
+      "node_count": 5,
+      "graph_count": 1
+    },
+    {
+      "id": "arch_5_bottleneck_mlp",
+      "name": "Arch 5: Bottleneck Autoencoder",
+      "category": "Autoencoders",
+      "description": "Encoder-decoder MLP with a narrow bottleneck for representation learning.",
+      "highlight": "Illustrates hourglass topology and reconstruction-style training.",
+      "tags": [
+        "autoencoder",
+        "bottleneck",
+        "encoder-decoder"
+      ],
+      "difficulty": "intermediate",
+      "path": "/examples/arch_5_bottleneck_mlp/arch_5_bottleneck_mlp.nbp.json",
+      "node_count": 8,
+      "graph_count": 1
+    },
+    {
+      "id": "arch_6_manual_attn",
+      "name": "Arch 6: Manual Attention Transformer",
+      "category": "Attention",
+      "description": "nanoGPT variant wired with explicit manual causal attention instead of SDPA.",
+      "highlight": "Peel back the attention black box \u2014 every matmul is visible on the canvas.",
+      "tags": [
+        "attention",
+        "manual",
+        "causal",
+        "transformer"
+      ],
+      "difficulty": "advanced",
+      "path": "/examples/arch_6_manual_attn/arch_6_manual_attn.nbp.json",
+      "node_count": 52,
+      "graph_count": 7
+    },
+    {
+      "id": "arch_7_dual_flow",
+      "name": "Arch 7: Dual-Flow Pipeline",
+      "category": "Training Pipelines",
+      "description": "Event-driven training graph with separate data and execution flows.",
+      "highlight": "Blueprint training as a visual program: dataloader \u2192 forward \u2192 backward \u2192 optimizer.",
+      "tags": [
+        "dual-flow",
+        "event-graph",
+        "training-loop"
+      ],
+      "difficulty": "advanced",
+      "path": "/examples/arch_7_dual_flow/arch_7_dual_flow.nbp.json",
+      "node_count": 10,
+      "graph_count": 1
+    },
+    {
+      "id": "arch_8_resmlp",
+      "name": "Arch 8: ResMLP Residual Network",
+      "category": "Feedforward",
+      "description": "Residual MLP block with LayerNorm and skip connections.",
+      "highlight": "Residual wiring without transformers \u2014 shows skip connections in pure MLP form.",
+      "tags": [
+        "residual",
+        "mlp",
+        "layernorm"
+      ],
+      "difficulty": "intermediate",
+      "path": "/examples/arch_8_resmlp/arch_8_resmlp.nbp.json",
+      "node_count": 9,
+      "graph_count": 1
+    },
+    {
+      "id": "arch_9_multihead",
+      "name": "Arch 9: Multi-Head Projection",
+      "category": "Attention",
+      "description": "Explicit QKV split, head split/merge, and SDPA attention wiring.",
+      "highlight": "Every attention primitive is a separate node \u2014 maximum transparency.",
+      "tags": [
+        "attention",
+        "qkv",
+        "sdpa",
+        "multi-head"
+      ],
+      "difficulty": "advanced",
+      "path": "/examples/arch_9_multihead/arch_9_multihead.nbp.json",
+      "node_count": 10,
+      "graph_count": 1
+    },
+    {
+      "id": "arch_10_multitask",
+      "name": "Arch 10: Multi-Task Network",
+      "category": "Multi-Task",
+      "description": "Shared backbone with parallel LM and classification heads plus weight tying.",
+      "highlight": "Fan-out topology with tied embeddings \u2014 one backbone, two objectives.",
+      "tags": [
+        "multi-task",
+        "weight-tying",
+        "classification",
+        "lm"
+      ],
+      "difficulty": "advanced",
+      "path": "/examples/arch_10_multitask/arch_10_multitask.nbp.json",
+      "node_count": 8,
+      "graph_count": 1
+    },
+    {
+      "id": "arch_11_relu_classifier",
+      "name": "Arch 11: ReLU Classifier MLP",
+      "category": "Feedforward",
+      "description": "Two-layer MLP using ReLU instead of GELU for sharp activation boundaries.",
+      "highlight": "Swap activations in one property \u2014 compare ReLU vs GELU behavior.",
+      "tags": [
+        "mlp",
+        "relu",
+        "activation"
+      ],
+      "difficulty": "beginner",
+      "path": "/examples/arch_11_relu_classifier/arch_11_relu_classifier.nbp.json",
+      "node_count": 5,
+      "graph_count": 1
+    },
+    {
+      "id": "arch_12_dropout_mlp",
+      "name": "Arch 12: Dropout MLP",
+      "category": "Regularization",
+      "description": "Feedforward network with dropout between hidden layers.",
+      "highlight": "Regularization as a first-class blueprint node, not a hidden flag.",
+      "tags": [
+        "dropout",
+        "mlp",
+        "regularization"
+      ],
+      "difficulty": "beginner",
+      "path": "/examples/arch_12_dropout_mlp/arch_12_dropout_mlp.nbp.json",
+      "node_count": 6,
+      "graph_count": 1
+    },
+    {
+      "id": "arch_13_deep_tower",
+      "name": "Arch 13: Deep MLP Tower",
+      "category": "Feedforward",
+      "description": "Five stacked linear+GELU layers without any attention.",
+      "highlight": "Pure depth \u2014 see how deep feedforward towers compose from primitives.",
+      "tags": [
+        "mlp",
+        "deep",
+        "tower"
+      ],
+      "difficulty": "intermediate",
+      "path": "/examples/arch_13_deep_tower/arch_13_deep_tower.nbp.json",
+      "node_count": 12,
+      "graph_count": 1
+    },
+    {
+      "id": "arch_14_wide_deep",
+      "name": "Arch 14: Wide-and-Deep Network",
+      "category": "Hybrid",
+      "description": "Parallel wide memorization path and deep generalization path fused with Add.",
+      "highlight": "Google-style wide-and-deep architecture built from basic nodes.",
+      "tags": [
+        "wide-deep",
+        "fusion",
+        "add",
+        "hybrid"
+      ],
+      "difficulty": "intermediate",
+      "path": "/examples/arch_14_wide_deep/arch_14_wide_deep.nbp.json",
+      "node_count": 8,
+      "graph_count": 1
+    },
+    {
+      "id": "arch_15_tied_lm",
+      "name": "Arch 15: Tied-Embedding LM",
+      "category": "Language Models",
+      "description": "Minimal language model: embedding \u2192 LM head with shared weights.",
+      "highlight": "Smallest possible LM \u2014 weight tying visible as an explicit binding.",
+      "tags": [
+        "lm",
+        "embedding",
+        "weight-tying",
+        "minimal"
+      ],
+      "difficulty": "beginner",
+      "path": "/examples/arch_15_tied_lm/arch_15_tied_lm.nbp.json",
+      "node_count": 4,
+      "graph_count": 1
+    },
+    {
+      "id": "arch_16_warmup_pipeline",
+      "name": "Arch 16: Warmup Scheduler Pipeline",
+      "category": "Training Pipelines",
+      "description": "Dual-flow graph with linear warmup LR scheduler node.",
+      "highlight": "Learning-rate schedules as blueprint nodes in the training event graph.",
+      "tags": [
+        "scheduler",
+        "warmup",
+        "dual-flow"
+      ],
+      "difficulty": "advanced",
+      "path": "/examples/arch_16_warmup_pipeline/arch_16_warmup_pipeline.nbp.json",
+      "node_count": 10,
+      "graph_count": 1
+    },
+    {
+      "id": "arch_17_step_lr_pipeline",
+      "name": "Arch 17: Step-LR Decay Pipeline",
+      "category": "Training Pipelines",
+      "description": "Dual-flow graph with step-wise learning rate decay.",
+      "highlight": "Compare scheduler strategies side-by-side with Arch 16.",
+      "tags": [
+        "scheduler",
+        "step-lr",
+        "dual-flow"
+      ],
+      "difficulty": "advanced",
+      "path": "/examples/arch_17_step_lr_pipeline/arch_17_step_lr_pipeline.nbp.json",
+      "node_count": 10,
+      "graph_count": 1
+    },
+    {
+      "id": "arch_18_prenorm_mlp",
+      "name": "Arch 18: Pre-LayerNorm MLP",
+      "category": "Normalization",
+      "description": "MLP with LayerNorm before each linear layer (pre-norm pattern).",
+      "highlight": "Normalization placement is a wiring choice, not framework magic.",
+      "tags": [
+        "layernorm",
+        "pre-norm",
+        "mlp"
+      ],
+      "difficulty": "intermediate",
+      "path": "/examples/arch_18_prenorm_mlp/arch_18_prenorm_mlp.nbp.json",
+      "node_count": 7,
+      "graph_count": 1
+    },
+    {
+      "id": "arch_19_residual_add",
+      "name": "Arch 19: Residual Add MLP",
+      "category": "Feedforward",
+      "description": "Single residual block using an explicit Add node for the skip connection.",
+      "highlight": "Skip connections drawn as visible edges \u2014 not buried in module code.",
+      "tags": [
+        "residual",
+        "add",
+        "skip-connection"
+      ],
+      "difficulty": "intermediate",
+      "path": "/examples/arch_19_residual_add/arch_19_residual_add.nbp.json",
+      "node_count": 5,
+      "graph_count": 1
+    },
+    {
+      "id": "arch_20_binary_cls",
+      "name": "Arch 20: Binary Sequence Classifier",
+      "category": "Classification",
+      "description": "Token embedding \u2192 linear head for binary sequence classification.",
+      "highlight": "NLP classification without transformers \u2014 just embeddings and a head.",
+      "tags": [
+        "classification",
+        "embedding",
+        "binary"
+      ],
+      "difficulty": "beginner",
+      "path": "/examples/arch_20_binary_cls/arch_20_binary_cls.nbp.json",
+      "node_count": 4,
+      "graph_count": 1
+    },
+    {
+      "id": "arch_21_dropout_gpt",
+      "name": "Arch 21: High-Dropout Transformer",
+      "category": "Transformers",
+      "description": "nanoGPT with 20% dropout for regularization-heavy training.",
+      "highlight": "Tune dropout on the canvas and watch training dynamics change.",
+      "tags": [
+        "transformer",
+        "dropout",
+        "regularization"
+      ],
+      "difficulty": "intermediate",
+      "path": "/examples/arch_21_dropout_gpt/arch_21_dropout_gpt.nbp.json",
+      "node_count": 52,
+      "graph_count": 7
+    },
+    {
+      "id": "arch_22_bf16_gpt",
+      "name": "Arch 22: BF16 nanoGPT Micro",
+      "category": "Precision",
+      "description": "Tiny nanoGPT configured for bfloat16 mixed-precision training.",
+      "highlight": "Mixed precision is a training property \u2014 cook and run with --precision bf16.",
+      "tags": [
+        "bf16",
+        "mixed-precision",
+        "transformer"
+      ],
+      "difficulty": "intermediate",
+      "path": "/examples/arch_22_bf16_gpt/arch_22_bf16_gpt.nbp.json",
+      "node_count": 52,
+      "graph_count": 7
+    },
+    {
+      "id": "arch_23_single_block",
+      "name": "Arch 23: Single-Block Causal GPT",
+      "category": "Transformers",
+      "description": "Smallest causal transformer: one block, four heads.",
+      "highlight": "Minimal transformer for teaching attention without stack complexity.",
+      "tags": [
+        "transformer",
+        "minimal",
+        "causal"
+      ],
+      "difficulty": "beginner",
+      "path": "/examples/arch_23_single_block/arch_23_single_block.nbp.json",
+      "node_count": 52,
+      "graph_count": 7
+    },
+    {
+      "id": "arch_24_silu_ffn",
+      "name": "Arch 24: SiLU Deep Feedforward",
+      "category": "Feedforward",
+      "description": "Two-layer MLP with SiLU (Swish) activation.",
+      "highlight": "Three activation primitives (GELU, ReLU, SiLU) \u2014 pick yours on the canvas.",
+      "tags": [
+        "mlp",
+        "silu",
+        "activation"
+      ],
+      "difficulty": "beginner",
+      "path": "/examples/arch_24_silu_ffn/arch_24_silu_ffn.nbp.json",
+      "node_count": 5,
+      "graph_count": 1
+    },
+    {
+      "id": "arch_25_metric_pipeline",
+      "name": "Arch 25: Metric Logger Pipeline",
+      "category": "Training Pipelines",
+      "description": "Dual-flow training graph with a Metric Logger node in the exec chain.",
+      "highlight": "Observability wired into the training program \u2014 metrics as blueprint nodes.",
+      "tags": [
+        "metrics",
+        "logging",
+        "dual-flow",
+        "observability"
+      ],
+      "difficulty": "advanced",
+      "path": "/examples/arch_25_metric_pipeline/arch_25_metric_pipeline.nbp.json",
+      "node_count": 11,
+      "graph_count": 1
+    }
+  ]
+}

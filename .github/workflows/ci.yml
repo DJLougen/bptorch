@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: make setup
+
+      - name: Backend tests
+        run: make test-backend
+
+      - name: Lint
+        run: make lint
+
+      - name: Parity suite
+        run: make parity
+
+      - name: Frontend unit tests
+        run: make test-frontend
+
+      - name: Frontend typecheck
+        run: cd web && npm run typecheck
+
+      - name: Frontend build
+        run: make build
+
+      - name: Install Playwright Chromium
+        run: cd web && npx playwright install --with-deps chromium
+
+      - name: Playwright E2E tests
+        run: cd web && npm run test:e2e
+        env:
+          CI: true
