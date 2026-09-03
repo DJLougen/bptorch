@@ -264,7 +264,9 @@
           }
         ],
         "repeat_count": null,
-        "target_graph_id": null
+        "target_graph_id": null,
+        "derived_from": null,
+        "modified": false
       },
       "graph_input_embeddings": {
         "id": "graph_input_embeddings",
@@ -485,7 +487,9 @@
           }
         ],
         "repeat_count": null,
-        "target_graph_id": null
+        "target_graph_id": null,
+        "derived_from": null,
+        "modified": false
       },
       "graph_attention": {
         "id": "graph_attention",
@@ -863,7 +867,9 @@
           }
         ],
         "repeat_count": null,
-        "target_graph_id": null
+        "target_graph_id": null,
+        "derived_from": null,
+        "modified": false
       },
       "graph_mlp": {
         "id": "graph_mlp",
@@ -1075,7 +1081,9 @@
           }
         ],
         "repeat_count": null,
-        "target_graph_id": null
+        "target_graph_id": null,
+        "derived_from": null,
+        "modified": false
       },
       "graph_block": {
         "id": "graph_block",
@@ -1324,7 +1332,9 @@
           }
         ],
         "repeat_count": null,
-        "target_graph_id": null
+        "target_graph_id": null,
+        "derived_from": null,
+        "modified": false
       },
       "graph_stack": {
         "id": "graph_stack",
@@ -1365,7 +1375,9 @@
           "kind": "config_ref",
           "key": "n_layer"
         },
-        "target_graph_id": "graph_block"
+        "target_graph_id": "graph_block",
+        "derived_from": null,
+        "modified": false
       },
       "graph_training_event": {
         "id": "graph_training_event",
@@ -1601,7 +1613,9 @@
           }
         ],
         "repeat_count": null,
-        "target_graph_id": null
+        "target_graph_id": null,
+        "derived_from": null,
+        "modified": false
       }
     },
     "weight_bindings": [
@@ -1742,6 +1756,8 @@
         }
       }
     },
-    "open_graph_id": "graph_gpt"
+    "open_graph_id": "graph_gpt",
+    "collapsed_node_ids": {},
+    "edge_waypoints": {}
   }
 }

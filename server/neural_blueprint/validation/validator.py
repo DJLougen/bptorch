@@ -151,20 +151,35 @@ class ProjectValidator:
                 seen_node_ids.add(node.id)
 
                 node_def = self.registry.get(node.definition_id)
-                if not node_def and not node.definition_id.startswith("custom."):
-                    diagnostics.append(
-                        Diagnostic(
-                            code=E_UNKNOWN_NODE_TYPE,
-                            severity="error",
-                            message=(
-                                f"Unknown node definition '{node.definition_id}' "
-                                f"on node '{node.display_name}'."
-                            ),
-                            node_id=node.id,
-                            suggestions=["Select a valid node type from palette."],
+                if not node_def:
+                    if node.definition_id.startswith("custom."):
+                        subgraph_id = node.definition_id[len("custom."):]
+                        if subgraph_id not in project.model.graphs:
+                            diagnostics.append(
+                                Diagnostic(
+                                    code=E_UNKNOWN_NODE_TYPE,
+                                    severity="error",
+                                    message=(
+                                        f"Custom subgraph '{subgraph_id}' does not exist in model graphs "
+                                        f"for node '{node.display_name}'."
+                                    ),
+                                    node_id=node.id,
+                                    suggestions=["Create the custom subgraph or re-link."],
+                                )
+                            )
+                    else:
+                        diagnostics.append(
+                            Diagnostic(
+                                code=E_UNKNOWN_NODE_TYPE,
+                                severity="error",
+                                message=(
+                                    f"Unknown node definition '{node.definition_id}' "
+                                    f"on node '{node.display_name}'."
+                                ),
+                                node_id=node.id,
+                                suggestions=["Select a valid node type from palette."],
+                            )
                         )
-                    )
-
         return diagnostics
 
     def _resolve_node_ports(
@@ -173,12 +188,20 @@ class ProjectValidator:
         context: NodeValidationContext,
     ) -> Tuple[Dict[str, PortDefinition], Dict[str, PortDefinition]]:
         node_def = self.registry.get(node.definition_id)
-        if not node_def:
-            return {}, {}
+        if node_def:
+            input_ports = {port.id: port for port in node_def.input_ports(node.properties, context)}
+            output_ports = {port.id: port for port in node_def.output_ports(node.properties, context)}
+            return input_ports, output_ports
 
-        input_ports = {port.id: port for port in node_def.input_ports(node.properties, context)}
-        output_ports = {port.id: port for port in node_def.output_ports(node.properties, context)}
-        return input_ports, output_ports
+        if node.definition_id.startswith("custom.") and context.graph_definitions:
+            subgraph_id = node.definition_id[len("custom."):]
+            if subgraph_id in context.graph_definitions:
+                subgraph = context.graph_definitions[subgraph_id]
+                input_ports = {port.id: port for port in subgraph.interface.inputs}
+                output_ports = {port.id: port for port in subgraph.interface.outputs}
+                return input_ports, output_ports
+
+        return {}, {}
 
     def _validate_graph_edges(
         self,

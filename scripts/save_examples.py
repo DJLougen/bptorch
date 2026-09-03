@@ -1,4 +1,4 @@
-"""Generate and save all 25 architecture sample project fixtures."""
+"""Generate and save all 26 architecture sample project fixtures."""
 
 import json
 from pathlib import Path
@@ -24,7 +24,7 @@ def _target_dirs(sample_id: str) -> list[Path]:
 
 
 def save_examples() -> None:
-    """Export all 25 architecture samples plus a manifest to public/examples."""
+    """Export all 26 architecture samples plus a manifest to public/examples."""
     catalog = build_catalog()
     manifest_samples = []
 
@@ -75,7 +75,7 @@ def save_examples() -> None:
     manifest = {
         "version": 1,
         "title": "bpTorch Sample Gallery",
-        "description": "25 trainable architecture demonstrations showcasing the diversity of visual blueprint programming.",
+        "description": "26 trainable architecture demonstrations showcasing the diversity of visual blueprint programming.",
         "count": len(manifest_samples),
         "samples": manifest_samples,
     }

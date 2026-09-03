@@ -10,9 +10,11 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  Code2,
   Cpu,
   Layers,
   LineChart,
+  MessageSquare,
   Play,
   ShieldCheck,
   Square,
@@ -28,7 +30,7 @@ import { useValidationStore } from '../stores/validationStore';
 export const BottomDrawer: React.FC = () => {
   const { activeDrawerTab, isDrawerOpen, openDrawerTab, closeDrawer, toggleDrawer, selectedNodeId, selectedEdgeId } =
     useUIStore();
-  const { project } = useProjectStore();
+  const { project, updateTrainingConfig, updateModelConfig } = useProjectStore();
   const isNanoGPTBaseline =
     project.project.id === 'nanogpt_default' &&
     project.model.config['attention_implementation'] !== undefined;
@@ -38,17 +40,212 @@ export const BottomDrawer: React.FC = () => {
     retainedSummaries,
     trainingMetrics,
     lossHistory,
+    valLossHistory,
+    parameterNorms,
     isTraining,
     startTraining,
     pauseTraining,
     stepBatch,
     stop,
     addLog,
+    updateHyperparameters,
   } = useTraceStore();
+
+  const [valFraction, setValFraction] = React.useState<number>(0.1);
 
   const [testSuiteResult, setTestSuiteResult] = React.useState<TestSuiteResult | null>(null);
   const [testSuiteError, setTestSuiteError] = React.useState<string | null>(null);
   const [isRunningSuite, setIsRunningSuite] = React.useState<boolean>(false);
+  const [promptText, setPromptText] = React.useState<string>('Hello');
+  const [promptTemplate, setPromptTemplate] = React.useState<'raw' | 'chatml' | 'alpaca' | 'llama3'>('raw');
+  const [useKVCache, setUseKVCache] = React.useState<boolean>(true);
+  const [maxNewTokens, setMaxNewTokens] = React.useState<number>(32);
+  const [temperature, setTemperature] = React.useState<number>(1.0);
+  const [isGenerating, setIsGenerating] = React.useState<boolean>(false);
+  const generatedText = useTraceStore((s) => s.generatedText);
+  const clearGenerated = useTraceStore((s) => s.clearGenerated);
+  const [cookedCode, setCookedCode] = React.useState<string>('');
+  const [isCooking, setIsCooking] = React.useState<boolean>(false);
+  const [selectedDataset, setSelectedDataset] = React.useState<'synthetic' | 'tiny_shakespeare'>('synthetic');
+  const [availableCheckpoints, setAvailableCheckpoints] = React.useState<Array<{ name: string; path: string }>>([]);
+  const [learningRate, setLearningRate] = React.useState<number>(6e-4);
+  const [weightDecay, setWeightDecay] = React.useState<number>(0.1);
+  const [gradClip, setGradClip] = React.useState<number>(1.0);
+  const [valLoss, setValLoss] = React.useState<number | null>(null);
+  const [isValidatingSession, setIsValidatingSession] = React.useState<boolean>(false);
+  const datasetFileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const refreshCheckpoints = async () => {
+    const sId = useTraceStore.getState().sessionId;
+    if (sId) {
+      try {
+        const res = await ApiClient.listCheckpoints(sId);
+        setAvailableCheckpoints(res.checkpoints || []);
+      } catch {
+        // ignore
+      }
+    }
+  };
+
+  const handleUploadDataset = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    try {
+      let currentSessionId = useTraceStore.getState().sessionId;
+      if (!currentSessionId) {
+        const comp = await ApiClient.compileModel(project, 'cpu', 'training');
+        currentSessionId = comp.session_id;
+        useTraceStore.setState({ sessionId: currentSessionId, graphHash: comp.graph_hash });
+        const newWs = ApiClient.connectTraceWebSocket(currentSessionId, (e) => {
+          useTraceStore.getState().handleTraceEvent(e);
+        });
+        useTraceStore.setState({ ws: newWs });
+      }
+      const res = await ApiClient.uploadDataset(currentSessionId, text);
+      addLog('info', `Custom dataset '${file.name}' uploaded (${res.num_samples} samples).`);
+    } catch (err) {
+      addLog('error', `Dataset upload failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+
+  const handleApplyHyperparameters = async () => {
+    const sId = useTraceStore.getState().sessionId;
+    if (!sId) {
+      addLog('warn', 'Cannot update hyperparameters without an active session.');
+      return;
+    }
+    try {
+      await ApiClient.updateHyperparameters(sId, {
+        learning_rate: learningRate,
+        weight_decay: weightDecay,
+        grad_clip: gradClip,
+      });
+      addLog('info', `Updated hyperparameters: lr=${learningRate}, wd=${weightDecay}, clip=${gradClip}`);
+    } catch (err) {
+      addLog('error', `Hyperparameter update failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+
+  const handleRunValidation = async () => {
+    const sId = useTraceStore.getState().sessionId;
+    if (!sId) {
+      addLog('warn', 'Cannot run validation without an active session.');
+      return;
+    }
+    setIsValidatingSession(true);
+    try {
+      const res = await ApiClient.runValidation(sId);
+      setValLoss(res.val_loss);
+      addLog('info', `Validation completed: val_loss=${res.val_loss.toFixed(4)} on ${res.val_samples} samples.`);
+    } catch (err) {
+      addLog('error', `Validation failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsValidatingSession(false);
+    }
+  };
+
+  const [checkpointPath, setCheckpointPath] = React.useState<string>('checkpoints/manual.pt');
+
+  const handleDatasetChange = async (name: 'synthetic' | 'tiny_shakespeare', fraction: number = valFraction) => {
+    setSelectedDataset(name);
+    try {
+      let currentSessionId = useTraceStore.getState().sessionId;
+      if (!currentSessionId) {
+        const comp = await ApiClient.compileModel(project, 'cpu', 'training');
+        currentSessionId = comp.session_id;
+        useTraceStore.setState({
+          sessionId: currentSessionId,
+          graphHash: comp.graph_hash,
+        });
+        const newWs = ApiClient.connectTraceWebSocket(currentSessionId, (event) => {
+          useTraceStore.getState().handleTraceEvent(event);
+        });
+        useTraceStore.setState({ ws: newWs });
+      }
+      const res = await ApiClient.setDataset(currentSessionId, name, fraction);
+      addLog('info', `Dataset switched to '${res.name}' (${res.num_samples} samples).`);
+    } catch (err) {
+      addLog('error', `Failed to set dataset: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+
+  const handleSaveCheckpoint = async () => {
+    try {
+      let currentSessionId = useTraceStore.getState().sessionId;
+      if (!currentSessionId) {
+        addLog('warn', 'Cannot save checkpoint without an active session.');
+        return;
+      }
+      const res = await ApiClient.saveCheckpoint(currentSessionId);
+      addLog('info', `Checkpoint saved: ${res.path}`);
+      refreshCheckpoints();
+    } catch (err) {
+      addLog('error', `Save checkpoint failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+
+  const handleLoadCheckpoint = async () => {
+    try {
+      let currentSessionId = useTraceStore.getState().sessionId;
+      if (!currentSessionId) {
+        addLog('warn', 'Cannot load checkpoint without an active session.');
+        return;
+      }
+      const res = await ApiClient.loadCheckpoint(currentSessionId, checkpointPath);
+      addLog('info', `Checkpoint loaded: step ${res.step}, epoch ${res.epoch}`);
+    } catch (err) {
+      addLog('error', `Load checkpoint failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+
+
+  const handleCookExport = async () => {
+    setIsCooking(true);
+    try {
+      const res = await ApiClient.cookExport(project);
+      setCookedCode(res.code);
+      addLog('info', 'PyTorch code exported successfully.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      addLog('error', msg);
+    } finally {
+      setIsCooking(false);
+    }
+  };
+
+
+  const handleGenerate = async () => {
+    clearGenerated();
+    setIsGenerating(true);
+    try {
+      let currentSessionId = useTraceStore.getState().sessionId;
+      if (!currentSessionId) {
+        const comp = await ApiClient.compileModel(project, 'cpu', 'training');
+        currentSessionId = comp.session_id;
+        useTraceStore.setState({
+          sessionId: currentSessionId,
+          graphHash: comp.graph_hash,
+        });
+        const newWs = ApiClient.connectTraceWebSocket(currentSessionId, (event) => {
+          useTraceStore.getState().handleTraceEvent(event);
+        });
+        useTraceStore.setState({ ws: newWs });
+      }
+      await ApiClient.generate(currentSessionId, {
+        prompt: promptText,
+        max_new_tokens: maxNewTokens,
+        temperature,
+        template: promptTemplate,
+        use_cache: useKVCache,
+        stream: true,
+      });
+    } catch (err) {
+      addLog('error', `Generation failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
   if (!isDrawerOpen || !activeDrawerTab) {
     return (
       <div
@@ -97,6 +294,38 @@ export const BottomDrawer: React.FC = () => {
           >
             <ShieldCheck size={12} />
             Tester {testSuiteResult && `(${testSuiteResult.passed}/${testSuiteResult.total})`}
+          </button>
+          <button
+            onClick={() => openDrawerTab('playground')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#38bdf8',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              fontSize: 11,
+            }}
+          >
+            <MessageSquare size={12} />
+            Playground
+          </button>
+          <button
+            onClick={() => openDrawerTab('code')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#38bdf8',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              fontSize: 11,
+            }}
+          >
+            <Code2 size={12} />
+            PyTorch Code
           </button>
           <button
             onClick={() => openDrawerTab('metrics')}
@@ -171,39 +400,72 @@ export const BottomDrawer: React.FC = () => {
         </div>
       );
     }
-
     const width = 600;
     const height = 130;
     const padding = 20;
+    const minStep = lossHistory[0].step;
+    const maxStep = Math.max(lossHistory[lossHistory.length - 1].step, minStep + 1);
 
-    const maxLoss = Math.max(...lossHistory.map((p) => p.loss), 0.1);
-    const minLoss = Math.min(...lossHistory.map((p) => p.loss), 0.0);
+    const allLosses = [
+      ...lossHistory.map((p) => p.loss),
+      ...valLossHistory.map((p) => p.val_loss),
+    ];
+    const maxLoss = Math.max(...allLosses, 0.1);
+    const minLoss = Math.min(...allLosses, 0.0);
 
-    const points = lossHistory.map((p, idx) => {
-      const x = padding + (idx / (lossHistory.length - 1)) * (width - 2 * padding);
+    const trainPoints = lossHistory.map((p) => {
+      const x = padding + ((p.step - minStep) / (maxStep - minStep)) * (width - 2 * padding);
       const y = height - padding - ((p.loss - minLoss) / Math.max(maxLoss - minLoss, 1e-4)) * (height - 2 * padding);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     });
+    const trainPath = `M ${trainPoints.join(' L ')}`;
 
-    const pathData = `M ${points.join(' L ')}`;
+    let valPath: string | null = null;
+    if (valLossHistory.length >= 2) {
+      const valPoints = valLossHistory.map((p) => {
+        const x = padding + Math.max(0, Math.min(1, (p.step - minStep) / (maxStep - minStep))) * (width - 2 * padding);
+        const y = height - padding - ((p.val_loss - minLoss) / Math.max(maxLoss - minLoss, 1e-4)) * (height - 2 * padding);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      });
+      valPath = `M ${valPoints.join(' L ')}`;
+    }
 
     return (
       <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
         <svg width={width} height={height} style={{ background: '#0a0c12', borderRadius: 6, border: '1px solid #1f2430' }}>
-          <path d={pathData} fill="none" stroke="#22c55e" strokeWidth="2" />
+          <path d={trainPath} fill="none" stroke="#38bdf8" strokeWidth="2" />
+          {valPath && <path d={valPath} fill="none" stroke="#f59e0b" strokeWidth="2" />}
           {lossHistory.map((p, idx) => {
             if (idx % Math.ceil(lossHistory.length / 10) === 0 || idx === lossHistory.length - 1) {
-              const x = padding + (idx / (lossHistory.length - 1)) * (width - 2 * padding);
+              const x = padding + ((p.step - minStep) / (maxStep - minStep)) * (width - 2 * padding);
               const y = height - padding - ((p.loss - minLoss) / Math.max(maxLoss - minLoss, 1e-4)) * (height - 2 * padding);
               return <circle key={idx} cx={x} cy={y} r="3" fill="#38bdf8" />;
             }
             return null;
           })}
+          {valPath &&
+            valLossHistory.map((p, idx) => {
+              const x = padding + Math.max(0, Math.min(1, (p.step - minStep) / (maxStep - minStep))) * (width - 2 * padding);
+              const y = height - padding - ((p.val_loss - minLoss) / Math.max(maxLoss - minLoss, 1e-4)) * (height - 2 * padding);
+              return <circle key={`val_${idx}`} cx={x} cy={y} r="3" fill="#f59e0b" />;
+            })}
         </svg>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 11 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ color: '#94a3b8' }}>Legend:</span>
+            <span style={{ color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ width: 10, height: 2, background: '#38bdf8', display: 'inline-block' }} /> Train
+            </span>
+            <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ width: 10, height: 2, background: '#f59e0b', display: 'inline-block' }} /> Val
+            </span>
+          </div>
           <div style={{ color: '#94a3b8' }}>Live Loss Stats:</div>
-          <div>Current Loss: <span style={{ color: '#22c55e', fontWeight: 600 }}>{lossHistory[lossHistory.length - 1].loss.toFixed(5)}</span></div>
+          <div>Current Loss: <span style={{ color: '#38bdf8', fontWeight: 600 }}>{lossHistory[lossHistory.length - 1].loss.toFixed(5)}</span></div>
+          {valLossHistory.length > 0 && (
+            <div>Val Loss: <span style={{ color: '#f59e0b', fontWeight: 600 }}>{valLossHistory[valLossHistory.length - 1].val_loss.toFixed(5)}</span></div>
+          )}
           <div>Min Loss: <span style={{ color: '#38bdf8' }}>{minLoss.toFixed(5)}</span></div>
           <div>Max Loss: <span style={{ color: '#f87171' }}>{maxLoss.toFixed(5)}</span></div>
           <div>Throughput: <span style={{ color: '#f59e0b' }}>{lossHistory[lossHistory.length - 1].tokens_per_sec.toFixed(0)} tok/s</span></div>
@@ -242,6 +504,8 @@ export const BottomDrawer: React.FC = () => {
               { id: 'loss', label: 'Live Loss Plotter', icon: LineChart },
               { id: 'metrics', label: 'Metrics Dashboard', icon: Activity },
               { id: 'tester', label: 'Architecture Tester', icon: ShieldCheck },
+              { id: 'playground', label: 'Playground', icon: MessageSquare },
+              { id: 'code', label: 'PyTorch Code', icon: Code2 },
               { id: 'tensor', label: 'Tensor Inspector', icon: Zap },
               { id: 'diagnostics', label: `Diagnostics (${diagnostics.length})`, icon: AlertTriangle },
               { id: 'parameters', label: 'Parameters', icon: Layers },
@@ -344,15 +608,326 @@ export const BottomDrawer: React.FC = () => {
       </div>
 
       {/* Drawer Body Content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: 14 }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column' }}>
         {activeDrawerTab === 'loss' && (
-          <div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 10,
+                paddingBottom: 8,
+                borderBottom: '1px solid #1f2430',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 11, color: '#94a3b8' }}>Dataset:</span>
+                <select
+                  aria-label="Training dataset"
+                  value={selectedDataset}
+                  onChange={(e) =>
+                    handleDatasetChange(e.target.value as 'synthetic' | 'tiny_shakespeare')
+                  }
+                  style={{
+                    background: '#181b24',
+                    border: '1px solid #272c3b',
+                    color: '#e2e8f0',
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    fontSize: 11,
+                    outline: 'none',
+                  }}
+                >
+                  <option value="synthetic">Synthetic</option>
+                  <option value="tiny_shakespeare">Tiny Shakespeare</option>
+                </select>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#94a3b8' }}>
+                  Val Split:
+                  <input
+                    type="number"
+                    aria-label="Validation fraction"
+                    min="0.05"
+                    max="0.5"
+                    step="0.05"
+                    value={valFraction}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value) || 0.1;
+                      setValFraction(v);
+                      handleDatasetChange(selectedDataset, v);
+                    }}
+                    style={{
+                      width: 55,
+                      background: '#181b24',
+                      border: '1px solid #272c3b',
+                      color: '#e2e8f0',
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      fontSize: 11,
+                    }}
+                  />
+                </label>
+                <input
+                  ref={datasetFileInputRef}
+                  type="file"
+                  accept=".txt,.csv"
+                  onChange={handleUploadDataset}
+                  style={{ display: 'none' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => datasetFileInputRef.current?.click()}
+                  style={{
+                    background: '#181b24',
+                    border: '1px solid #272c3b',
+                    color: '#cbd5e1',
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    fontSize: 11,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Upload .txt
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  onClick={handleSaveCheckpoint}
+                  style={{
+                    background: '#181b24',
+                    border: '1px solid #272c3b',
+                    color: '#cbd5e1',
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    fontSize: 11,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Save checkpoint
+                </button>
+                {availableCheckpoints.length > 0 && (
+                  <select
+                    aria-label="Select saved checkpoint"
+                    value={checkpointPath}
+                    onChange={(e) => setCheckpointPath(e.target.value)}
+                    style={{
+                      background: '#0a0c12',
+                      border: '1px solid #272c3b',
+                      color: '#e2e8f0',
+                      padding: '4px 8px',
+                      borderRadius: 4,
+                      fontSize: 11,
+                    }}
+                  >
+                    {availableCheckpoints.map((c) => (
+                      <option key={c.path} value={c.path}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <input
+                  type="text"
+                  value={checkpointPath}
+                  onChange={(e) => setCheckpointPath(e.target.value)}
+                  style={{
+                    background: '#0a0c12',
+                    border: '1px solid #272c3b',
+                    color: '#e2e8f0',
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    fontSize: 11,
+                    width: 170,
+                  }}
+                />
+                <button
+                  onClick={handleLoadCheckpoint}
+                  style={{
+                    background: '#181b24',
+                    border: '1px solid #272c3b',
+                    color: '#cbd5e1',
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    fontSize: 11,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Load checkpoint
+                </button>
+              </div>
+            </div>
+
+            {/* Live Hyperparameters & Validation Controls */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 12,
+                paddingBottom: 8,
+                borderBottom: '1px solid #1f2430',
+                fontSize: 11,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ color: '#94a3b8' }}>Live Tuning:</span>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  Batch:
+                  <input
+                    type="number"
+                    aria-label="Batch size"
+                    min="1"
+                    step="1"
+                    value={project.model.training?.batch_size ?? 8}
+                    onChange={(e) => {
+                      const val = Math.max(1, parseInt(e.target.value, 10) || 1);
+                      updateTrainingConfig('batch_size', val);
+                      const sId = useTraceStore.getState().sessionId;
+                      if (sId) {
+                        updateHyperparameters({ batch_size: val });
+                      }
+                    }}
+                    style={{
+                      width: 55,
+                      background: '#0a0c12',
+                      border: '1px solid #272c3b',
+                      color: '#e2e8f0',
+                      padding: '2px 4px',
+                      borderRadius: 4,
+                      fontSize: 11,
+                    }}
+                  />
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  Seq:
+                  <input
+                    type="number"
+                    aria-label="Sequence length"
+                    min="1"
+                    step="1"
+                    value={typeof project.model.config.block_size === 'number' ? project.model.config.block_size : 8}
+                    onChange={(e) => {
+                      const val = Math.max(1, parseInt(e.target.value, 10) || 1);
+                      updateModelConfig('block_size', val);
+                      addLog('warn', 'Sequence length change requires recompile.');
+                    }}
+                    style={{
+                      width: 55,
+                      background: '#0a0c12',
+                      border: '1px solid #272c3b',
+                      color: '#e2e8f0',
+                      padding: '2px 4px',
+                      borderRadius: 4,
+                      fontSize: 11,
+                    }}
+                  />
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  LR:
+                  <input
+                    type="number"
+                    step={0.0001}
+                    value={learningRate}
+                    onChange={(e) => setLearningRate(Number(e.target.value))}
+                    style={{
+                      width: 70,
+                      background: '#0a0c12',
+                      border: '1px solid #272c3b',
+                      color: '#e2e8f0',
+                      padding: '2px 4px',
+                      borderRadius: 4,
+                      fontSize: 11,
+                    }}
+                  />
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  WD:
+                  <input
+                    type="number"
+                    step={0.01}
+                    value={weightDecay}
+                    onChange={(e) => setWeightDecay(Number(e.target.value))}
+                    style={{
+                      width: 60,
+                      background: '#0a0c12',
+                      border: '1px solid #272c3b',
+                      color: '#e2e8f0',
+                      padding: '2px 4px',
+                      borderRadius: 4,
+                      fontSize: 11,
+                    }}
+                  />
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  Clip:
+                  <input
+                    type="number"
+                    step={0.1}
+                    value={gradClip}
+                    onChange={(e) => setGradClip(Number(e.target.value))}
+                    style={{
+                      width: 50,
+                      background: '#0a0c12',
+                      border: '1px solid #272c3b',
+                      color: '#e2e8f0',
+                      padding: '2px 4px',
+                      borderRadius: 4,
+                      fontSize: 11,
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={handleApplyHyperparameters}
+                  style={{
+                    background: '#1e293b',
+                    border: '1px solid #334155',
+                    color: '#38bdf8',
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                    fontSize: 11,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Apply
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={handleRunValidation}
+                  disabled={isValidatingSession}
+                  style={{
+                    background: '#1e293b',
+                    border: '1px solid #334155',
+                    color: '#a855f7',
+                    padding: '3px 10px',
+                    borderRadius: 4,
+                    fontSize: 11,
+                    cursor: isValidatingSession ? 'default' : 'pointer',
+                    fontWeight: 600,
+                  }}
+                >
+                  {isValidatingSession ? 'Validating...' : 'Run Validation'}
+                </button>
+                {valLoss !== null && (
+                  <span style={{ color: '#22c55e', fontWeight: 600 }}>
+                    Val Loss: {valLoss.toFixed(4)}
+                  </span>
+                )}
+              </div>
+            </div>
+
             {renderLossPlot()}
           </div>
         )}
 
         {activeDrawerTab === 'metrics' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12 }}>
             <div style={{ background: '#181b24', padding: '10px 14px', borderRadius: 6, border: '1px solid #272c3b' }}>
               <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 4 }}>Training Step</div>
               <div style={{ fontSize: 18, fontWeight: 700, color: '#38bdf8' }}>
@@ -391,6 +966,18 @@ export const BottomDrawer: React.FC = () => {
                 {trainingMetrics ? `${trainingMetrics.tokens_per_sec.toFixed(0)} tok/s` : '—'}
               </div>
               <div style={{ fontSize: 10, color: '#64748b' }}>Step: {trainingMetrics?.step_time_ms.toFixed(1) ?? '—'} ms</div>
+            </div>
+
+            <div style={{ background: '#181b24', padding: '10px 14px', borderRadius: 6, border: '1px solid #272c3b' }}>
+              <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 4 }}>Param L2</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#f59e0b' }}>
+                {Object.keys(parameterNorms).length > 0
+                  ? Object.values(parameterNorms).reduce((a, b) => a + b, 0).toFixed(3)
+                  : '—'}
+              </div>
+              <div style={{ fontSize: 10, color: '#64748b' }}>
+                {Object.keys(parameterNorms).length > 0 ? `${Object.keys(parameterNorms).length} params` : 'N/A'}
+              </div>
             </div>
           </div>
         )}
@@ -470,8 +1057,8 @@ export const BottomDrawer: React.FC = () => {
         )}
 
         {activeDrawerTab === 'parameters' && (
-          <div style={{ display: 'flex', gap: 32 }}>
-            <div>
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 32, overflow: 'hidden' }}>
+            <div style={{ flexShrink: 0 }}>
               <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 4 }}>Model Totals:</div>
               <div style={{ fontSize: 13, fontWeight: 600 }}>
                 Unique Parameters: <span style={{ color: '#38bdf8' }}>{parameterSummary.total_unique.toLocaleString()}</span>
@@ -486,18 +1073,18 @@ export const BottomDrawer: React.FC = () => {
                 Shared References: {parameterSummary.shared_references} (Tied Weights)
               </div>
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 4 }}>Per-Node Breakdown:</div>
-              <div style={{ maxHeight: 120, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4, fontFamily: 'monospace', fontSize: 11 }}>
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6, flexShrink: 0 }}>Per-Node Breakdown:</div>
+              <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4, fontFamily: 'monospace', fontSize: 11, paddingRight: 4 }}>
                 {Object.entries(parameterSummary.breakdown_by_node || {}).map(([nodePath, info]) => {
                   let totalStr = '0';
                   if (info && typeof info === 'object' && 'total' in info) {
                     totalStr = String(info.total);
                   }
                   return (
-                    <div key={nodePath} style={{ display: 'flex', justifyContent: 'space-between', background: '#181b24', padding: '3px 8px', borderRadius: 3 }}>
+                    <div key={nodePath} style={{ display: 'flex', justifyContent: 'space-between', background: '#181b24', padding: '5px 10px', borderRadius: 4, border: '1px solid #232838' }}>
                       <span>{nodePath}</span>
-                      <span style={{ color: '#38bdf8' }}>{totalStr} params</span>
+                      <span style={{ color: '#38bdf8', fontWeight: 600 }}>{totalStr} params</span>
                     </div>
                   );
                 })}
@@ -670,6 +1257,227 @@ export const BottomDrawer: React.FC = () => {
             ) : (
               <div style={{ color: '#64748b', fontSize: 11 }}>
                 Click "Run Test Suite" to execute the 6-pillar validation battery (Dynamic Shapes, Autograd Health, Single-Batch Overfit, Checkpointing, Standalone Cooking, and Numerical Stability).
+              </div>
+            )}
+          </div>
+        )}
+        {activeDrawerTab === 'playground' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ fontSize: 11, color: '#94a3b8' }}>Prompt</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>Format:</span>
+                    <select
+                      aria-label="Prompt template"
+                      value={promptTemplate}
+                      onChange={(e) =>
+                        setPromptTemplate(e.target.value as 'raw' | 'chatml' | 'alpaca' | 'llama3')
+                      }
+                      style={{
+                        background: '#0a0c12',
+                        border: '1px solid #1f2430',
+                        borderRadius: 4,
+                        color: '#e2e8f0',
+                        padding: '2px 6px',
+                        fontSize: 11,
+                      }}
+                    >
+                      <option value="raw">Raw Text</option>
+                      <option value="chatml">ChatML</option>
+                      <option value="alpaca">Alpaca / Instruct</option>
+                      <option value="llama3">Llama-3</option>
+                    </select>
+                    <label
+                      style={{
+                        fontSize: 11,
+                        color: '#94a3b8',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={useKVCache}
+                        onChange={(e) => setUseKVCache(e.target.checked)}
+                      />
+                      KV Cache
+                    </label>
+                  </div>
+                </div>
+                <textarea
+                  value={promptText}
+                  onChange={(e) => setPromptText(e.target.value)}
+                  placeholder="Enter prompt..."
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    background: '#0a0c12',
+                    border: '1px solid #1f2430',
+                    borderRadius: 4,
+                    color: '#e2e8f0',
+                    padding: '6px 8px',
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                    resize: 'vertical',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 140 }}>
+                <label style={{ fontSize: 11, color: '#94a3b8' }}>Max New Tokens</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={256}
+                  value={maxNewTokens}
+                  onChange={(e) => setMaxNewTokens(Number(e.target.value))}
+                  style={{
+                    background: '#0a0c12',
+                    border: '1px solid #1f2430',
+                    borderRadius: 4,
+                    color: '#e2e8f0',
+                    padding: '4px 8px',
+                    fontSize: 11,
+                  }}
+                />
+
+                <label style={{ fontSize: 11, color: '#94a3b8' }}>Temperature</label>
+                <input
+                  type="number"
+                  step={0.1}
+                  min={0}
+                  max={2}
+                  value={temperature}
+                  onChange={(e) => setTemperature(Number(e.target.value))}
+                  style={{
+                    background: '#0a0c12',
+                    border: '1px solid #1f2430',
+                    borderRadius: 4,
+                    color: '#e2e8f0',
+                    padding: '4px 8px',
+                    fontSize: 11,
+                  }}
+                />
+
+                <button
+                  onClick={handleGenerate}
+                  disabled={isGenerating}
+                  style={{
+                    marginTop: 6,
+                    background: isGenerating ? '#1e293b' : '#0284c7',
+                    border: 'none',
+                    borderRadius: 4,
+                    color: '#ffffff',
+                    padding: '6px 12px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: isGenerating ? 'default' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <Play size={12} />
+                  {isGenerating ? 'Generating...' : 'Generate'}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 11, color: '#94a3b8' }}>Generated Output:</span>
+                {generatedText && (
+                  <button
+                    onClick={clearGenerated}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#64748b',
+                      fontSize: 10,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <pre
+                style={{
+                  background: '#0a0c12',
+                  border: '1px solid #1f2430',
+                  borderRadius: 4,
+                  padding: 10,
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                  color: '#38bdf8',
+                  minHeight: 60,
+                  maxHeight: 200,
+                  overflowY: 'auto',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  margin: 0,
+                }}
+              >
+                {generatedText || <span style={{ color: '#475569' }}>Generated text will stream here...</span>}
+              </pre>
+            </div>
+          </div>
+        )}
+        {activeDrawerTab === 'code' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                Export standalone, zero-dependency PyTorch training script from active blueprint.
+              </span>
+              <button
+                onClick={handleCookExport}
+                disabled={isCooking}
+                style={{
+                  background: isCooking ? '#1e293b' : '#0284c7',
+                  border: 'none',
+                  borderRadius: 4,
+                  color: '#ffffff',
+                  padding: '5px 12px',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: isCooking ? 'default' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <Code2 size={12} />
+                {isCooking ? 'Exporting...' : 'Export PyTorch Code'}
+              </button>
+            </div>
+
+            {cookedCode ? (
+              <pre
+                style={{
+                  background: '#0a0c12',
+                  border: '1px solid #1f2430',
+                  borderRadius: 4,
+                  padding: 12,
+                  fontFamily: 'monospace',
+                  fontSize: 11,
+                  color: '#e2e8f0',
+                  maxHeight: 400,
+                  overflowY: 'auto',
+                  whiteSpace: 'pre',
+                  margin: 0,
+                }}
+              >
+                {cookedCode}
+              </pre>
+            ) : (
+              <div style={{ color: '#64748b', fontSize: 11, padding: 20, textAlign: 'center' }}>
+                Click "Export PyTorch Code" to compile visual blueprint into standalone train.py script.
               </div>
             )}
           </div>

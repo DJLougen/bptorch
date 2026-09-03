@@ -146,3 +146,62 @@ def test_cooked_script_applies_precision_flag():
     assert "torch.autocast" in code
     assert "args.precision" in code
 
+def test_generic_cook_arch_5_bottleneck_mlp(tmp_path):
+    from neural_blueprint.templates.architectures import create_arch_5_bottleneck_mlp
+
+    project = create_arch_5_bottleneck_mlp()
+    code = BlueprintCooker.cook(project)
+    assert "class CookedModel" in code
+
+    script_path = BlueprintCooker.cook_to_file(project, "pytest/arch5_train.py")
+    assert script_path.exists()
+
+    res = subprocess.run(
+        [sys.executable, str(script_path), "--max-steps", "2", "--seed", "1"],
+        capture_output=True,
+        text=True,
+    )
+    assert res.returncode == 0, f"Execution failed: {res.stderr}"
+    assert "=== Starting Blueprint Model Training ===" in res.stdout
+    assert "=== Training Complete in" in res.stdout
+
+def test_generic_cook_arch_26_llama_tiny(tmp_path):
+    from neural_blueprint.templates.architectures import create_arch_26_llama_tiny
+
+    project = create_arch_26_llama_tiny()
+    code = BlueprintCooker.cook(project)
+    assert "class CookedModel" in code
+    assert "class Submodule_graph_llama_block" in code
+    assert "class Submodule_graph_llama_attention" in code
+
+    script_path = BlueprintCooker.cook_to_file(project, "pytest/arch26_train.py")
+    assert script_path.exists()
+
+    res = subprocess.run(
+        [sys.executable, str(script_path), "--max-steps", "2", "--seed", "1"],
+        capture_output=True,
+        text=True,
+    )
+    assert res.returncode == 0, f"Execution failed: {res.stderr}"
+    assert "=== Starting Blueprint Model Training ===" in res.stdout
+    assert "=== Training Complete in" in res.stdout
+
+
+def test_cook_inference_mode(tmp_path):
+    from neural_blueprint.templates.architectures import create_arch_26_llama_tiny
+
+    project = create_arch_26_llama_tiny()
+    code = BlueprintCooker.cook(project, mode="inference")
+    assert "Inference Runner" in code
+    assert "model.eval()" in code
+    assert "with torch.no_grad():" in code
+
+    script_path = BlueprintCooker.cook_to_file(project, "pytest/arch26_infer.py", mode="inference")
+    res = subprocess.run(
+        [sys.executable, str(script_path)],
+        capture_output=True,
+        text=True,
+    )
+    assert res.returncode == 0, f"Inference execution failed: {res.stderr}"
+    assert "Inference successful! Output shape:" in res.stdout
+

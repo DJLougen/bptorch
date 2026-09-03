@@ -1,8 +1,8 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { NodeDefinitionSummary } from '../src/api/contracts';
 import { NodePalette } from '../src/palette/NodePalette';
-
+import { useUIStore } from '../src/stores/uiStore';
 const mockCatalog: NodeDefinitionSummary[] = [
   {
     type_id: 'builtin.linear@1',
@@ -31,6 +31,10 @@ const mockCatalog: NodeDefinitionSummary[] = [
 ];
 
 describe('NodePalette Component', () => {
+  beforeEach(() => {
+    useUIStore.setState({ paletteSearchQuery: '', isPaletteOpen: true });
+  });
+
   it('renders categories and filters nodes with search', () => {
     render(<NodePalette catalog={mockCatalog} />);
 
@@ -44,5 +48,27 @@ describe('NodePalette Component', () => {
 
     expect(screen.getByText('Linear')).toBeInTheDocument();
     expect(screen.queryByText('GELU')).not.toBeInTheDocument();
+  });
+
+  it('displays Debug category or Comment when catalog includes builtin.comment@1', () => {
+    const catalogWithComment: NodeDefinitionSummary[] = [
+      ...mockCatalog,
+      {
+        type_id: 'builtin.comment@1',
+        version: 1,
+        display_name: 'Comment',
+        category: 'Debug',
+        description: 'Documentation comment node',
+        icon: 'Terminal',
+        is_composite: false,
+        property_schema: {},
+        default_inputs: [],
+        default_outputs: [],
+      },
+    ];
+
+    render(<NodePalette catalog={catalogWithComment} />);
+    expect(screen.getByText('Debug')).toBeInTheDocument();
+    expect(screen.getByText('Comment')).toBeInTheDocument();
   });
 });

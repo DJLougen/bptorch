@@ -344,6 +344,194 @@
     ]
   },
   {
+    "type_id": "builtin.rope@1",
+    "version": 1,
+    "display_name": "Rotary Position Embedding (RoPE)",
+    "category": "Attention",
+    "description": "Applies rotary position embeddings to query or key tensor.",
+    "icon": "RotateCw",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "head_dim": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "default": 32
+        },
+        "n_head": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "n_head"
+          }
+        },
+        "base": {
+          "type": "number",
+          "default": 10000.0
+        }
+      }
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input (Q or K)",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "positions",
+        "display_name": "Positions",
+        "direction": "input",
+        "kind": "data",
+        "required": false,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "integer",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Rotated",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.grouped_query_attention@1",
+    "version": 1,
+    "display_name": "Grouped Query Attention (GQA)",
+    "category": "Attention",
+    "description": "Grouped Query Attention with repeated KV heads and causal masking.",
+    "icon": "Zap",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "n_head": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "n_head"
+          }
+        },
+        "n_kv_head": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "n_kv_head"
+          }
+        },
+        "dropout": {
+          "type": [
+            "number",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "dropout"
+          }
+        }
+      },
+      "required": [
+        "n_head"
+      ]
+    },
+    "default_inputs": [
+      {
+        "id": "q",
+        "display_name": "Query",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "k",
+        "display_name": "Key",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      },
+      {
+        "id": "v",
+        "display_name": "Value",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Attended",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
     "type_id": "builtin.tensor_input@1",
     "version": 1,
     "display_name": "Tensor Input",
@@ -1173,6 +1361,201 @@
     "display_name": "Transformer Stack",
     "category": "Composite Modules",
     "description": "Repeated stack executing N independent Transformer Block instances sequentially.",
+    "icon": "Layers",
+    "is_composite": true,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input [B, T, C]",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Output [B, T, C]",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.llama_input_embeddings@1",
+    "version": 1,
+    "display_name": "Llama Input Embeddings",
+    "category": "Composite Modules",
+    "description": "Hierarchical composite module containing token embeddings.",
+    "icon": "Layers",
+    "is_composite": true,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "tokens",
+        "display_name": "Tokens",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Embeddings",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.llama_attention@1",
+    "version": 1,
+    "display_name": "Llama Attention",
+    "category": "Composite Modules",
+    "description": "Hierarchical composite module containing QKV projection, RoPE, Grouped Query Attention, and output linear projection.",
+    "icon": "Layers",
+    "is_composite": true,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input [B, T, C]",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Output [B, T, C]",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.llama_mlp@1",
+    "version": 1,
+    "display_name": "Llama MLP",
+    "category": "Composite Modules",
+    "description": "Hierarchical composite module containing SwiGLU feedforward block.",
+    "icon": "Layers",
+    "is_composite": true,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input [B, T, C]",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Output [B, T, C]",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.llama_block@1",
+    "version": 1,
+    "display_name": "Llama Transformer Block",
+    "category": "Composite Modules",
+    "description": "Complete Llama Transformer Block with pre-RMSNorm attention and SwiGLU residual streams.",
+    "icon": "Layers",
+    "is_composite": true,
+    "property_schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input [B, T, C]",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Output [B, T, C]",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.llama_stack@1",
+    "version": 1,
+    "display_name": "Llama Stack",
+    "category": "Composite Modules",
+    "description": "Repeated stack executing N independent Llama Transformer Block instances sequentially.",
     "icon": "Layers",
     "is_composite": true,
     "property_schema": {
@@ -2600,6 +2983,135 @@
         "required": true,
         "multiplicity": "single",
         "tensor_type": null,
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.rmsnorm@1",
+    "version": 1,
+    "display_name": "RMSNorm",
+    "category": "Layers",
+    "description": "Root Mean Square Layer Normalization without learnable bias.",
+    "icon": "Sliders",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "normalized_shape": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "n_embd"
+          }
+        },
+        "eps": {
+          "type": "number",
+          "default": 1e-05
+        }
+      },
+      "required": [
+        "normalized_shape"
+      ]
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Normalized",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ]
+  },
+  {
+    "type_id": "builtin.swiglu@1",
+    "version": 1,
+    "display_name": "SwiGLU",
+    "category": "Layers",
+    "description": "SwiGLU gated linear unit feed-forward network.",
+    "icon": "Zap",
+    "is_composite": false,
+    "property_schema": {
+      "type": "object",
+      "properties": {
+        "n_embd": {
+          "type": [
+            "integer",
+            "object"
+          ],
+          "default": {
+            "kind": "config_ref",
+            "key": "n_embd"
+          }
+        },
+        "hidden_dim": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "n_embd"
+      ]
+    },
+    "default_inputs": [
+      {
+        "id": "input",
+        "display_name": "Input",
+        "direction": "input",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
+        "default_shape": null,
+        "description": null
+      }
+    ],
+    "default_outputs": [
+      {
+        "id": "output",
+        "display_name": "Output",
+        "direction": "output",
+        "kind": "data",
+        "required": true,
+        "multiplicity": "single",
+        "tensor_type": {
+          "dtype_family": "floating",
+          "rank": null
+        },
         "default_shape": null,
         "description": null
       }

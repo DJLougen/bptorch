@@ -24,6 +24,8 @@ class TraceEventType(str, Enum):
     ANOMALY_DETECTED = "anomaly_detected"
     TRAIN_FINISHED = "train_finished"
     HYPERPARAMETER_UPDATED = "hyperparameter_updated"
+    TOKEN_GENERATED = "token_generated"
+    GENERATION_FINISHED = "generation_finished"
 
 
 class TensorSummary(BaseModel):
@@ -78,3 +80,5 @@ class TraceEvent(BaseModel):
     outputs: Dict[str, TensorSummary] = Field(default_factory=dict)
     metrics: Optional[TrainingMetrics] = None
     error: Optional[str] = None
+    token: Optional[str] = None
+    token_id: Optional[int] = None

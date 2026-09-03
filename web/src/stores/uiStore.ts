@@ -4,11 +4,12 @@
 
 import { create } from 'zustand';
 
-export type DrawerTab = 'tensor' | 'diagnostics' | 'parameters' | 'parity' | 'logs' | 'loss' | 'metrics' | 'tester';
+export type DrawerTab = 'tensor' | 'diagnostics' | 'parameters' | 'parity' | 'logs' | 'loss' | 'metrics' | 'tester' | 'playground' | 'code';
 export type TraceSpeed = 'instant' | 'fast' | 'normal' | 'step';
 
 interface UIState {
   selectedNodeId: string | null;
+  selectedNodeIds: string[];
   selectedEdgeId: string | null;
   activeDrawerTab: DrawerTab | null;
   isDrawerOpen: boolean;
@@ -24,6 +25,7 @@ interface UIState {
 
   // Actions
   selectNode: (nodeId: string | null) => void;
+  selectNodes: (ids: string[]) => void;
   selectEdge: (edgeId: string | null) => void;
   openDrawerTab: (tab: DrawerTab) => void;
   closeDrawer: () => void;
@@ -39,8 +41,9 @@ interface UIState {
   adjustDrawerHeight: (delta: number) => void;
 }
 
-export const useUIStore = create<UIState>((set) => ({
+export const useUIStore = create<UIState>((set, get) => ({
   selectedNodeId: null,
+  selectedNodeIds: [],
   selectedEdgeId: null,
   activeDrawerTab: null,
   isDrawerOpen: false,
@@ -55,11 +58,41 @@ export const useUIStore = create<UIState>((set) => ({
   drawerHeight: 260,
 
   selectNode: (nodeId: string | null) => {
+    const curId = get().selectedNodeId;
+    const curIds = get().selectedNodeIds;
+    if (curId === nodeId && curIds.length === (nodeId ? 1 : 0) && (!nodeId || curIds[0] === nodeId)) {
+      if (nodeId && !get().isInspectorOpen) {
+        set({ isInspectorOpen: true });
+      }
+      return;
+    }
     set({
       selectedNodeId: nodeId,
+      selectedNodeIds: nodeId ? [nodeId] : [],
       selectedEdgeId: null,
       activeDrawerTab: nodeId ? 'tensor' : null,
       isDrawerOpen: Boolean(nodeId),
+      isInspectorOpen: true,
+    });
+  },
+
+  selectNodes: (ids: string[]) => {
+    const curIds = get().selectedNodeIds;
+    if (
+      curIds.length === ids.length &&
+      curIds.every((id, idx) => id === ids[idx])
+    ) {
+      if (ids.length > 0 && !get().isInspectorOpen) {
+        set({ isInspectorOpen: true });
+      }
+      return;
+    }
+    set({
+      selectedNodeIds: ids,
+      selectedNodeId: ids[0] ?? null,
+      selectedEdgeId: null,
+      activeDrawerTab: ids[0] ? 'tensor' : null,
+      isDrawerOpen: Boolean(ids[0]),
       isInspectorOpen: true,
     });
   },
@@ -68,6 +101,7 @@ export const useUIStore = create<UIState>((set) => ({
     set({
       selectedEdgeId: edgeId,
       selectedNodeId: null,
+      selectedNodeIds: [],
       activeDrawerTab: edgeId ? 'tensor' : null,
       isDrawerOpen: Boolean(edgeId),
       isInspectorOpen: true,

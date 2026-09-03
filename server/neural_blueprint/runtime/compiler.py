@@ -21,6 +21,11 @@ COMPOSITE_TYPE_MAP = {
     "builtin.nanogpt_mlp@1": "graph_mlp",
     "builtin.nanogpt_block@1": "graph_block",
     "builtin.nanogpt_stack@1": "graph_stack",
+    "builtin.llama_input_embeddings@1": "graph_llama_input_embeddings",
+    "builtin.llama_attention@1": "graph_llama_attention",
+    "builtin.llama_mlp@1": "graph_llama_mlp",
+    "builtin.llama_block@1": "graph_llama_block",
+    "builtin.llama_stack@1": "graph_llama_stack",
 }
 
 
@@ -200,7 +205,8 @@ class GraphCompiler:
 
                 node_def = self.registry.get(node.definition_id)
                 subgraph_id = COMPOSITE_TYPE_MAP.get(node.definition_id)
-
+                if not subgraph_id and node.definition_id.startswith("custom."):
+                    subgraph_id = node.definition_id[len("custom.") :]
                 all_bindings: List[InputBinding] = []
                 exec_bindings: List[InputBinding] = []
                 data_bindings: List[InputBinding] = []
@@ -225,11 +231,12 @@ class GraphCompiler:
                     else:
                         data_bindings.append(binding)
 
-                raw_out_ports = (
-                    [p.id for p in node_def.output_ports(node.properties, context)]
-                    if node_def
-                    else ["output"]
-                )
+                if node_def:
+                    raw_out_ports = [p.id for p in node_def.output_ports(node.properties, context)]
+                elif subgraph_id and subgraph_id in project.model.graphs:
+                    raw_out_ports = [p.id for p in project.model.graphs[subgraph_id].interface.outputs]
+                else:
+                    raw_out_ports = ["output"]
                 exec_out_ports = [
                     p for p in raw_out_ports if self._is_exec_port(p, node_def, is_output=True)
                 ]
@@ -269,6 +276,33 @@ class GraphCompiler:
                 in_name = node.properties.get("name", "input") if is_input else None
                 if is_input and in_name:
                     input_names.append(in_name)
+                if node.metadata.disabled:
+                    out_port_id = data_out_ports[0].id if data_out_ports else "output"
+                    identity_fn = lambda x=None, input=None, **kwargs: {
+                        out_port_id: input if input is not None else (x if x is not None else (next(iter(kwargs.values())) if kwargs else None)),
+                        "output": input if input is not None else (x if x is not None else (next(iter(kwargs.values())) if kwargs else None)),
+                    }
+                    inst = ExecutionInstruction(
+                        node_path=node_path,
+                        node_id=node.id,
+                        definition_id=node.definition_id,
+                        display_name=node.display_name,
+                        input_bindings=all_bindings,
+                        output_ports=raw_out_ports,
+                        kind=inst_kind,
+                        exec_in_bindings=exec_bindings,
+                        exec_out_ports=exec_out_ports,
+                        data_input_bindings=data_bindings,
+                        data_output_ports=data_out_ports,
+                        input_name=in_name,
+                        functional_fn=identity_fn,
+                        is_terminal_output=is_terminal,
+                        output_name=out_name,
+                    )
+                    instructions.append(inst)
+                    if bool(exec_bindings) or (node.id in outbound_exec_node_ids):
+                        exec_instructions.append(inst)
+                    continue
 
                 # Check if this node maps to a composite subgraph
                 if subgraph_id and subgraph_id in project.model.graphs:

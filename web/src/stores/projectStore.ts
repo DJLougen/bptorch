@@ -7,10 +7,15 @@ import type {
   Edge,
   GraphDefinition,
   NodeInstance,
+  NodeMetadata,
   NodePosition,
+  PortDefinition,
   Project,
+  TrainingConfig,
   Viewport,
 } from '../api/contracts';
+import { COMPOSITE_TYPE_MAP } from '../components/BreadcrumbBar';
+import { useTraceStore } from './traceStore';
 
 export const PROJECT_STORAGE_KEY = 'bptorch.project.v1';
 
@@ -282,14 +287,41 @@ interface ProjectState {
   updateNodeProperty: (nodeId: string, key: string, value: unknown) => void;
   updateNodeDisplayName: (nodeId: string, value: string) => void;
   updateModelConfig: (key: string, value: unknown) => void;
+  updateTrainingConfig: (key: string, value: unknown) => void;
   setNodeBreakpoint: (nodeId: string, enabled: boolean) => void;
+  updateNodeMetadata: (nodeId: string, patch: Partial<NodeMetadata>) => void;
   createEditableModuleCopy: (nodeId: string) => void;
-
+  markClean: () => void;
+  batchAddNodesAndEdges: (
+    nodes: NodeInstance[],
+    edges: Edge[],
+    positions: Record<string, NodePosition>
+  ) => void;
+  extractSubgraph: (nodeIds: string[], moduleName?: string) => string | null;
+  toggleNodeCollapsed: (nodeId: string) => void;
+  setEdgeWaypoints: (edgeId: string, points: NodePosition[]) => void;
+  alignSelected: (axis: 'left' | 'top', ids: string[]) => void;
   undo: () => void;
   redo: () => void;
 }
 
 // Initial fallback project state
+export const DEFAULT_TRAINING_CONFIG: TrainingConfig = {
+  device: 'cpu',
+  precision: 'fp32',
+  ddp_enabled: false,
+  seed: 1337,
+  max_epochs: 10,
+  max_steps: 100,
+  learning_rate: 6e-4,
+  weight_decay: 0.1,
+  grad_accum_steps: 1,
+  grad_clip: 1.0,
+  batch_size: 8,
+  checkpoint_interval: 50,
+  eval_interval: 50,
+};
+
 export const createInitialProject = (): Project => ({
   schema_version: 1,
   project: {
@@ -658,9 +690,31 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       redoStack: [],
     });
   },
+  updateTrainingConfig: (key: string, value: unknown) => {
+    const { project, undoStack } = get();
+    const currentTraining: TrainingConfig = project.model.training || DEFAULT_TRAINING_CONFIG;
+    const nextProject: Project = {
+      ...project,
+      model: {
+        ...project.model,
+        training: {
+          ...currentTraining,
+          [key]: value,
+        } as TrainingConfig,
+      },
+    };
+
+    set({
+      project: nextProject,
+      isDirty: true,
+      undoStack: [...undoStack, project],
+      redoStack: [],
+    });
+  },
+
 
   setNodeBreakpoint: (nodeId: string, enabled: boolean) => {
-    const { project, openGraphId } = get();
+    const { project, openGraphId, undoStack } = get();
     const currentGraph = project.model.graphs[openGraphId];
     if (!currentGraph) return;
 
@@ -677,20 +731,65 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       return node;
     });
 
-    set({
-      project: {
-        ...project,
-        model: {
-          ...project.model,
-          graphs: {
-            ...project.model.graphs,
-            [openGraphId]: {
-              ...currentGraph,
-              nodes: updatedNodes,
-            },
+    const nextProject: Project = {
+      ...project,
+      model: {
+        ...project.model,
+        graphs: {
+          ...project.model.graphs,
+          [openGraphId]: {
+            ...currentGraph,
+            nodes: updatedNodes,
           },
         },
       },
+    };
+
+    set({
+      project: nextProject,
+      isDirty: true,
+      undoStack: [...undoStack, project],
+      redoStack: [],
+    });
+  },
+
+  updateNodeMetadata: (nodeId: string, patch: Partial<NodeMetadata>) => {
+    const { project, openGraphId, undoStack } = get();
+    const currentGraph = project.model.graphs[openGraphId];
+    if (!currentGraph) return;
+
+    const updatedNodes = currentGraph.nodes.map((node) => {
+      if (node.id === nodeId) {
+        return {
+          ...node,
+          metadata: {
+            ...node.metadata,
+            ...patch,
+          },
+        };
+      }
+      return node;
+    });
+
+    const nextProject: Project = {
+      ...project,
+      model: {
+        ...project.model,
+        graphs: {
+          ...project.model.graphs,
+          [openGraphId]: {
+            ...currentGraph,
+            nodes: updatedNodes,
+          },
+        },
+      },
+    };
+
+    set({
+      project: nextProject,
+      isDirty: true,
+      undoStack: [...undoStack, project],
+      redoStack: [],
     });
   },
 
@@ -702,29 +801,56 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     const node = currentGraph.nodes.find((n) => n.id === nodeId);
     if (!node) return;
 
-    // Create custom definition
-    const customType = `custom.${node.id}_${Date.now()}`;
-    const customGraphId = `graph_custom_${node.id}`;
+    let sourceGraphId: string | undefined = COMPOSITE_TYPE_MAP[node.definition_id];
+    if (!sourceGraphId || !project.model.graphs[sourceGraphId]) {
+      if (node.definition_id.startsWith('custom.')) {
+        const suffix = node.definition_id.slice('custom.'.length);
+        if (project.model.graphs[suffix]) {
+          sourceGraphId = suffix;
+        }
+      }
+    }
 
-    // Find original subgraph
-    const origSubgraph = Object.values(project.model.graphs).find(
-      (g) => g.id.includes(node.id) || g.name.toLowerCase().includes(node.display_name.toLowerCase())
-    );
+    if (!sourceGraphId || !project.model.graphs[sourceGraphId]) {
+      useTraceStore.getState().addLog('warn', `Cannot find source graph for ${node.definition_id}`);
+      return;
+    }
 
-    if (!origSubgraph) return;
+    const orig = project.model.graphs[sourceGraphId];
+    const newGraphId = `graph_custom_${Date.now()}`;
 
     const customGraph: GraphDefinition = {
-      ...origSubgraph,
-      id: customGraphId,
+      ...orig,
+      id: newGraphId,
       name: `Custom ${node.display_name}`,
+      derived_from: node.definition_id,
+      modified: true,
+      nodes: orig.nodes.map((n) => ({
+        ...n,
+        properties: { ...n.properties },
+        metadata: { ...n.metadata },
+      })),
+      edges: orig.edges.map((e) => ({
+        ...e,
+        source: { ...e.source },
+        target: { ...e.target },
+      })),
     };
+
+    if (orig.kind === 'repeat') {
+      customGraph.target_graph_id = orig.target_graph_id;
+    }
+
+    const nextNodePositions = { ...project.ui.node_positions };
+    if (project.ui.node_positions[orig.id]) {
+      nextNodePositions[newGraphId] = { ...project.ui.node_positions[orig.id] };
+    }
 
     const updatedNodes = currentGraph.nodes.map((n) => {
       if (n.id === nodeId) {
         return {
           ...n,
-          definition_id: customType,
-          display_name: `${n.display_name}*`,
+          definition_id: `custom.${newGraphId}`,
         };
       }
       return n;
@@ -740,7 +866,63 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
             ...currentGraph,
             nodes: updatedNodes,
           },
-          [customGraphId]: customGraph,
+          [newGraphId]: customGraph,
+        },
+      },
+      ui: {
+        ...project.ui,
+        node_positions: nextNodePositions,
+      },
+    };
+
+    set({
+      project: nextProject,
+      isDirty: true,
+      undoStack: [...undoStack, project],
+      redoStack: [],
+    });
+  },
+
+  markClean: () => {
+    const { project } = get();
+    set({ isDirty: false });
+    persistProject(project);
+  },
+
+  batchAddNodesAndEdges: (
+    newNodes: NodeInstance[],
+    newEdges: Edge[],
+    newPositions: Record<string, NodePosition>
+  ) => {
+    const { project, openGraphId, undoStack } = get();
+    const currentGraph = project.model.graphs[openGraphId];
+    if (!currentGraph) return;
+
+    const updatedGraph: GraphDefinition = {
+      ...currentGraph,
+      nodes: [...currentGraph.nodes, ...newNodes],
+      edges: [...currentGraph.edges, ...newEdges],
+    };
+
+    const updatedPositions = {
+      ...(project.ui.node_positions[openGraphId] || {}),
+      ...newPositions,
+    };
+
+    const nextProject: Project = {
+      ...project,
+      model: {
+        ...project.model,
+        graphs: {
+          ...project.model.graphs,
+          [openGraphId]: updatedGraph,
+        },
+      },
+      ui: {
+        ...project.ui,
+        node_positions: {
+          ...project.ui.node_positions,
+          [openGraphId]: updatedPositions,
         },
       },
     };
@@ -751,6 +933,277 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       undoStack: [...undoStack, project],
       redoStack: [],
     });
+  },
+
+  extractSubgraph: (nodeIds: string[], moduleName?: string): string | null => {
+    const { project, openGraphId, undoStack } = get();
+    const currentGraph = project.model.graphs[openGraphId];
+    if (!currentGraph || nodeIds.length === 0) return null;
+
+    const selectedNodeSet = new Set(nodeIds);
+    const selectedNodes = currentGraph.nodes.filter((n) => selectedNodeSet.has(n.id));
+    if (selectedNodes.length === 0) return null;
+
+    const ts = Date.now();
+    const newGraphId = `graph_custom_${ts}`;
+    const compDefId = `custom.${newGraphId}`;
+    const compositeNodeId = `node_comp_${ts}`;
+    const compositeDisplayName = moduleName || 'Custom Module';
+
+    const internalEdges: Edge[] = [];
+    const incomingEdges: Edge[] = [];
+    const outgoingEdges: Edge[] = [];
+    const unaffectedEdges: Edge[] = [];
+
+    for (const edge of currentGraph.edges) {
+      const srcSelected = selectedNodeSet.has(edge.source.node_id);
+      const tgtSelected = selectedNodeSet.has(edge.target.node_id);
+
+      if (srcSelected && tgtSelected) {
+        internalEdges.push(edge);
+      } else if (!srcSelected && tgtSelected) {
+        incomingEdges.push(edge);
+      } else if (srcSelected && !tgtSelected) {
+        outgoingEdges.push(edge);
+      } else {
+        unaffectedEdges.push(edge);
+      }
+    }
+
+    const moduleInputNodes: NodeInstance[] = [];
+    const moduleInputPorts: PortDefinition[] = [];
+    const newGraphIncomingEdges: Edge[] = [];
+    const rewiredIncomingEdges: Edge[] = [];
+
+    incomingEdges.forEach((edge, idx) => {
+      const portName = `in_${edge.target.port_id}_${idx}`;
+      const inputNodeId = `mod_in_${idx}`;
+      moduleInputPorts.push({
+        id: portName,
+        display_name: portName,
+        direction: 'input',
+        required: true,
+      });
+      moduleInputNodes.push({
+        id: inputNodeId,
+        definition_id: 'builtin.module_input@1',
+        display_name: `Input (${portName})`,
+        properties: { name: portName },
+        metadata: { breakpoint: false, disabled: false },
+      });
+      newGraphIncomingEdges.push({
+        id: `e_mod_in_${idx}`,
+        source: { node_id: inputNodeId, port_id: 'output' },
+        target: { node_id: edge.target.node_id, port_id: edge.target.port_id },
+      });
+      rewiredIncomingEdges.push({
+        id: edge.id,
+        source: edge.source,
+        target: { node_id: compositeNodeId, port_id: portName },
+      });
+    });
+
+    const moduleOutputNodes: NodeInstance[] = [];
+    const moduleOutputPorts: PortDefinition[] = [];
+    const newGraphOutgoingEdges: Edge[] = [];
+    const rewiredOutgoingEdges: Edge[] = [];
+
+    outgoingEdges.forEach((edge, idx) => {
+      const portName = `out_${edge.source.port_id}_${idx}`;
+      const outputNodeId = `mod_out_${idx}`;
+      moduleOutputPorts.push({
+        id: portName,
+        display_name: portName,
+        direction: 'output',
+      });
+      moduleOutputNodes.push({
+        id: outputNodeId,
+        definition_id: 'builtin.module_output@1',
+        display_name: `Output (${portName})`,
+        properties: { name: portName },
+        metadata: { breakpoint: false, disabled: false },
+      });
+      newGraphOutgoingEdges.push({
+        id: `e_mod_out_${idx}`,
+        source: { node_id: edge.source.node_id, port_id: edge.source.port_id },
+        target: { node_id: outputNodeId, port_id: 'input' },
+      });
+      rewiredOutgoingEdges.push({
+        id: edge.id,
+        source: { node_id: compositeNodeId, port_id: portName },
+        target: edge.target,
+      });
+    });
+
+    const newGraph: GraphDefinition = {
+      id: newGraphId,
+      name: compositeDisplayName,
+      kind: 'module',
+      interface: {
+        inputs: moduleInputPorts,
+        outputs: moduleOutputPorts,
+      },
+      nodes: [...moduleInputNodes, ...selectedNodes, ...moduleOutputNodes],
+      edges: [...newGraphIncomingEdges, ...internalEdges, ...newGraphOutgoingEdges],
+    };
+
+    const oldPositions = project.ui.node_positions[openGraphId] || {};
+    let sumX = 0;
+    let sumY = 0;
+    let count = 0;
+    let minX = Infinity;
+    let minY = Infinity;
+    for (const nid of nodeIds) {
+      const pos = oldPositions[nid] || { x: 100, y: 100 };
+      sumX += pos.x;
+      sumY += pos.y;
+      minX = Math.min(minX, pos.x);
+      minY = Math.min(minY, pos.y);
+      count++;
+    }
+    const centroid = count > 0 ? { x: Math.round(sumX / count), y: Math.round(sumY / count) } : { x: 150, y: 150 };
+
+    const newGraphPositions: Record<string, NodePosition> = {};
+    moduleInputNodes.forEach((n, idx) => {
+      newGraphPositions[n.id] = { x: 80, y: 100 + idx * 120 };
+    });
+    for (const n of selectedNodes) {
+      const pos = oldPositions[n.id] || { x: 100, y: 100 };
+      newGraphPositions[n.id] = {
+        x: Math.max(260, (pos.x - (minX === Infinity ? 0 : minX)) + 260),
+        y: Math.max(100, (pos.y - (minY === Infinity ? 0 : minY)) + 100),
+      };
+    }
+    moduleOutputNodes.forEach((n, idx) => {
+      newGraphPositions[n.id] = { x: 600, y: 100 + idx * 120 };
+    });
+
+    const compositeNode: NodeInstance = {
+      id: compositeNodeId,
+      definition_id: compDefId,
+      display_name: compositeDisplayName,
+      properties: {},
+      metadata: { breakpoint: false, disabled: false },
+    };
+
+    const remainingNodes = currentGraph.nodes.filter((n) => !selectedNodeSet.has(n.id));
+    const updatedCurrentGraph: GraphDefinition = {
+      ...currentGraph,
+      nodes: [...remainingNodes, compositeNode],
+      edges: [...unaffectedEdges, ...rewiredIncomingEdges, ...rewiredOutgoingEdges],
+    };
+
+    const updatedCurrentPositions = { ...oldPositions };
+    for (const nid of nodeIds) {
+      delete updatedCurrentPositions[nid];
+    }
+    updatedCurrentPositions[compositeNodeId] = centroid;
+
+    const nextProject: Project = {
+      ...project,
+      model: {
+        ...project.model,
+        graphs: {
+          ...project.model.graphs,
+          [newGraphId]: newGraph,
+          [openGraphId]: updatedCurrentGraph,
+        },
+      },
+      ui: {
+        ...project.ui,
+        node_positions: {
+          ...project.ui.node_positions,
+          [newGraphId]: newGraphPositions,
+          [openGraphId]: updatedCurrentPositions,
+        },
+      },
+    };
+
+    set({
+      project: nextProject,
+      isDirty: true,
+      undoStack: [...undoStack, project],
+      redoStack: [],
+    });
+
+    return newGraphId;
+  },
+
+  toggleNodeCollapsed: (nodeId: string) => {
+    const { project, openGraphId, undoStack } = get();
+    const currentList = project.ui.collapsed_node_ids?.[openGraphId] ?? [];
+    const nextList = currentList.includes(nodeId)
+      ? currentList.filter((id) => id !== nodeId)
+      : [...currentList, nodeId];
+
+    const nextProject: Project = {
+      ...project,
+      ui: {
+        ...project.ui,
+        collapsed_node_ids: {
+          ...(project.ui.collapsed_node_ids || {}),
+          [openGraphId]: nextList,
+        },
+      },
+    };
+
+    set({
+      project: nextProject,
+      isDirty: true,
+      undoStack: [...undoStack, project],
+      redoStack: [],
+    });
+  },
+
+  setEdgeWaypoints: (edgeId: string, points: NodePosition[]) => {
+    const { project, openGraphId, undoStack } = get();
+    const currentGraphWaypoints = project.ui.edge_waypoints?.[openGraphId] ?? {};
+
+    const nextProject: Project = {
+      ...project,
+      ui: {
+        ...project.ui,
+        edge_waypoints: {
+          ...(project.ui.edge_waypoints || {}),
+          [openGraphId]: {
+            ...currentGraphWaypoints,
+            [edgeId]: points,
+          },
+        },
+      },
+    };
+
+    set({
+      project: nextProject,
+      isDirty: true,
+      undoStack: [...undoStack, project],
+      redoStack: [],
+    });
+  },
+
+  alignSelected: (axis: 'left' | 'top', ids: string[]) => {
+    const { project, openGraphId } = get();
+    if (!ids || ids.length <= 1) return;
+    const positions = project.ui.node_positions[openGraphId] || {};
+    const relevantPositions = ids.map((id) => positions[id] || { x: 0, y: 0 });
+
+    if (axis === 'left') {
+      const minX = Math.min(...relevantPositions.map((p) => p.x));
+      const nextPositions: Record<string, NodePosition> = {};
+      for (const id of ids) {
+        const cur = positions[id] || { x: 0, y: 0 };
+        nextPositions[id] = { x: minX, y: cur.y };
+      }
+      get().moveNodes(nextPositions);
+    } else {
+      const minY = Math.min(...relevantPositions.map((p) => p.y));
+      const nextPositions: Record<string, NodePosition> = {};
+      for (const id of ids) {
+        const cur = positions[id] || { x: 0, y: 0 };
+        nextPositions[id] = { x: cur.x, y: minY };
+      }
+      get().moveNodes(nextPositions);
+    }
   },
 
   undo: () => {

@@ -35,6 +35,30 @@ class NanoGPTLayerNorm(nn.Module):
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         return F.layer_norm(input, self.weight.shape, self.weight, self.bias, self.eps)
 
+class RMSNorm(nn.Module):
+    def __init__(self, ndim: int, eps: float = 1e-5):
+        super().__init__()
+        self.eps = eps
+        self.weight = nn.Parameter(torch.ones(ndim))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        rms = x.pow(2).mean(dim=-1, keepdim=True).add(self.eps).rsqrt()
+        return self.weight * x * rms
+
+
+class SwiGLU(nn.Module):
+    def __init__(self, n_embd: int, hidden_dim: Optional[int] = None):
+        super().__init__()
+        if hidden_dim is None:
+            raw_h = int(8 * n_embd / 3)
+            hidden_dim = ((raw_h + 7) // 8) * 8
+        self.w_gate = nn.Linear(n_embd, hidden_dim, bias=False)
+        self.w_up = nn.Linear(n_embd, hidden_dim, bias=False)
+        self.w_down = nn.Linear(hidden_dim, n_embd, bias=False)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.w_down(F.silu(self.w_gate(x)) * self.w_up(x))
+
 
 @register_node
 class EmbeddingNode(NodeDefinition):
@@ -336,4 +360,217 @@ class DropoutNode(NodeDefinition):
             module_type="nn_module",
             factory=lambda: nn.Dropout(p),
             kwargs={"p": p},
+        )
+
+@register_node
+class RMSNormNode(NodeDefinition):
+    type_id = "builtin.rmsnorm@1"
+    version = 1
+    display_name = "RMSNorm"
+    category = "Layers"
+    description = "Root Mean Square Layer Normalization without learnable bias."
+    icon = "Sliders"
+
+    def property_schema(self) -> Dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "normalized_shape": {
+                    "type": ["integer", "object"],
+                    "default": {"kind": "config_ref", "key": "n_embd"},
+                },
+                "eps": {"type": "number", "default": 1e-5},
+            },
+            "required": ["normalized_shape"],
+        }
+
+    def input_ports(
+        self,
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> List[PortDefinition]:
+        return [
+            PortDefinition(
+                id="input",
+                display_name="Input",
+                direction="input",
+                required=True,
+                tensor_type=TensorType(dtype_family="floating"),
+            )
+        ]
+
+    def output_ports(
+        self,
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> List[PortDefinition]:
+        return [
+            PortDefinition(
+                id="output",
+                display_name="Normalized",
+                direction="output",
+                tensor_type=TensorType(dtype_family="floating"),
+            )
+        ]
+
+    def infer_shapes(
+        self,
+        inputs: Dict[str, TensorSpec],
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> Dict[str, TensorSpec]:
+        in_spec = inputs.get("input")
+        if in_spec:
+            return {"output": TensorSpec(dtype=in_spec.dtype, shape=list(in_spec.shape))}
+        return {
+            "output": TensorSpec(
+                dtype="float32",
+                shape=[SymbolDim(name="B"), SymbolDim(name="T"), SymbolDim(name="C")],
+            )
+        }
+
+    def parameter_spec(
+        self,
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> ParameterSpec:
+        cfg = context.model_config if context else {}
+        ndim = int(evaluate_value(properties.get("normalized_shape", 64), cfg))
+        return ParameterSpec(
+            trainable_count=ndim,
+            frozen_count=0,
+            parameter_shapes={"weight": [ndim]},
+            has_bias=False,
+        )
+
+    def build_runtime(
+        self,
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> RuntimeModuleSpec:
+        cfg = context.model_config if context else {}
+        ndim = int(evaluate_value(properties.get("normalized_shape", 64), cfg))
+        eps = float(properties.get("eps", 1e-5))
+
+        return RuntimeModuleSpec(
+            module_type="nn_module",
+            factory=lambda: RMSNorm(ndim, eps=eps),
+            kwargs={"ndim": ndim, "eps": eps},
+        )
+
+
+@register_node
+class SwiGLUNode(NodeDefinition):
+    type_id = "builtin.swiglu@1"
+    version = 1
+    display_name = "SwiGLU"
+    category = "Layers"
+    description = "SwiGLU gated linear unit feed-forward network."
+    icon = "Zap"
+
+    def property_schema(self) -> Dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "n_embd": {
+                    "type": ["integer", "object"],
+                    "default": {"kind": "config_ref", "key": "n_embd"},
+                },
+                "hidden_dim": {
+                    "type": ["integer", "null"],
+                    "default": None,
+                },
+            },
+            "required": ["n_embd"],
+        }
+
+    def input_ports(
+        self,
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> List[PortDefinition]:
+        return [
+            PortDefinition(
+                id="input",
+                display_name="Input",
+                direction="input",
+                required=True,
+                tensor_type=TensorType(dtype_family="floating"),
+            )
+        ]
+
+    def output_ports(
+        self,
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> List[PortDefinition]:
+        return [
+            PortDefinition(
+                id="output",
+                display_name="Output",
+                direction="output",
+                tensor_type=TensorType(dtype_family="floating"),
+            )
+        ]
+
+    def infer_shapes(
+        self,
+        inputs: Dict[str, TensorSpec],
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> Dict[str, TensorSpec]:
+        in_spec = inputs.get("input")
+        if in_spec:
+            return {"output": TensorSpec(dtype=in_spec.dtype, shape=list(in_spec.shape))}
+        return {
+            "output": TensorSpec(
+                dtype="float32",
+                shape=[SymbolDim(name="B"), SymbolDim(name="T"), SymbolDim(name="C")],
+            )
+        }
+
+    def parameter_spec(
+        self,
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> ParameterSpec:
+        cfg = context.model_config if context else {}
+        n_embd = int(evaluate_value(properties.get("n_embd", 64), cfg))
+        raw_hidden = properties.get("hidden_dim")
+        if raw_hidden is None:
+            raw_h = int(8 * n_embd / 3)
+            hidden_dim = ((raw_h + 7) // 8) * 8
+        else:
+            hidden_dim = int(evaluate_value(raw_hidden, cfg))
+
+        shapes = {
+            "w_gate.weight": [hidden_dim, n_embd],
+            "w_up.weight": [hidden_dim, n_embd],
+            "w_down.weight": [n_embd, hidden_dim],
+        }
+        trainable = 2 * (hidden_dim * n_embd) + (n_embd * hidden_dim)
+
+        return ParameterSpec(
+            trainable_count=trainable,
+            frozen_count=0,
+            parameter_shapes=shapes,
+            has_bias=False,
+        )
+
+    def build_runtime(
+        self,
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> RuntimeModuleSpec:
+        cfg = context.model_config if context else {}
+        n_embd = int(evaluate_value(properties.get("n_embd", 64), cfg))
+        raw_hidden = properties.get("hidden_dim")
+        hidden_dim = (
+            int(evaluate_value(raw_hidden, cfg)) if raw_hidden is not None else None
+        )
+
+        return RuntimeModuleSpec(
+            module_type="nn_module",
+            factory=lambda: SwiGLU(n_embd=n_embd, hidden_dim=hidden_dim),
+            kwargs={"n_embd": n_embd, "hidden_dim": hidden_dim},
         )

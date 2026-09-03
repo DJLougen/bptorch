@@ -18,3 +18,38 @@ describe('BottomDrawer tester tab', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('network down');
   });
 });
+describe('BottomDrawer playground tab', () => {
+  beforeEach(() => {
+    useUIStore.setState({ isDrawerOpen: true, activeDrawerTab: 'loss' });
+    useProjectStore.getState().loadProject(useProjectStore.getState().project);
+  });
+
+  it('has playground tab button and displays playground controls when selected', () => {
+    render(<BottomDrawer />);
+    const playgroundTabBtn = screen.getByRole('button', { name: /Playground/i });
+    expect(playgroundTabBtn).toBeInTheDocument();
+
+    fireEvent.click(playgroundTabBtn);
+    expect(screen.getByRole('button', { name: /Generate/i })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Prompt template' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/KV Cache/i)).toBeInTheDocument();
+  });
+});
+describe('BottomDrawer loss tab controls', () => {
+  beforeEach(() => {
+    useUIStore.setState({ isDrawerOpen: true, activeDrawerTab: 'loss' });
+    useProjectStore.getState().loadProject(useProjectStore.getState().project);
+  });
+
+  it('renders dataset select and save checkpoint button when drawer open on loss tab', () => {
+    render(<BottomDrawer />);
+    expect(screen.getByRole('combobox', { name: 'Training dataset' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Upload .txt' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save checkpoint' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Load checkpoint' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Run Validation' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Batch size')).toBeInTheDocument();
+    expect(screen.getByLabelText('Validation fraction')).toBeInTheDocument();
+  });
+});

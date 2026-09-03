@@ -1,4 +1,4 @@
-"""Batch-train all 25 architecture samples and record results."""
+"""Batch-train all catalog architecture samples and record results."""
 
 from __future__ import annotations
 

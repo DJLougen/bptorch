@@ -552,3 +552,50 @@ class GraphOutputNode(NodeDefinition):
         context: Optional[NodeValidationContext] = None,
     ) -> Dict[str, TensorSpec]:
         return {}
+
+
+@register_node
+class CommentNode(NodeDefinition):
+    type_id = "builtin.comment@1"
+    version = 1
+    display_name = "Comment"
+    category = "Debug"
+    description = "Documentation comment / sticky note node with no ports."
+    icon = "Terminal"
+
+    def property_schema(self) -> Dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "text": {"type": "string", "default": ""},
+            },
+        }
+
+    def input_ports(
+        self,
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> List[PortDefinition]:
+        return []
+
+    def output_ports(
+        self,
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> List[PortDefinition]:
+        return []
+
+    def infer_shapes(
+        self,
+        inputs: Dict[str, TensorSpec],
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> Dict[str, TensorSpec]:
+        return {}
+
+    def build_runtime(
+        self,
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> Optional[RuntimeModuleSpec]:
+        return RuntimeModuleSpec(module_type="functional", factory=lambda: lambda **kwargs: {})

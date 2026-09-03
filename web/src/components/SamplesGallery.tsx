@@ -1,5 +1,5 @@
 /**
- * Sample Gallery — browse and load 25 architecture demonstrations.
+ * Sample Gallery — browse and load 26 architecture demonstrations.
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -108,7 +108,7 @@ export const SamplesGallery: React.FC<SamplesGalleryProps> = ({ open, onClose })
               )}
             </div>
             <p style={{ margin: 0, fontSize: 12, color: '#94a3b8', maxWidth: 640 }}>
-              {manifest?.description || 'Explore 25 trainable blueprints — transformers, MLPs, training pipelines, attention mechanics, and more.'}
+              {manifest?.description || 'Explore 26 trainable blueprints — transformers, MLPs, training pipelines, attention mechanics, and more.'}
             </p>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>

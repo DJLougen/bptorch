@@ -266,7 +266,25 @@ def create_arch_10_multitask_network():
         'graph_multitask': g_root }, weight_bindings = [
         WeightBinding(source = WeightBindingEndpoint(node_id = 'node_wte', parameter = 'weight'), target = WeightBindingEndpoint(node_id = 'node_lm_head', parameter = 'weight'), mode = 'share')]), ui = UIState(open_graph_id = 'graph_multitask'))
 
-ALL_ARCHITECTURES: List[Tuple[(str, Any)]] = [
+def create_arch_26_llama_tiny() -> Project:
+    from neural_blueprint.templates.llama import create_llama_tiny_template
+
+    p = create_llama_tiny_template(
+        block_size=32,
+        vocab_size=64,
+        n_layer=2,
+        n_head=4,
+        n_kv_head=2,
+        n_embd=32,
+        dropout=0.0,
+    )
+    p.project.id = "arch_26_llama_tiny"
+    p.project.name = "Arch 26: Llama Tiny"
+    p.model.training = TrainingConfig(max_steps=40, batch_size=8, seed=1337)
+    return p
+
+
+ALL_ARCHITECTURES: List[Tuple[str, Any]] = [
     ('Arch 1: nanoGPT Tiny', create_arch_1_nanogpt_tiny),
     ('Arch 2: nanoGPT Deep (6L)', create_arch_2_nanogpt_deep),
     ('Arch 3: nanoGPT Wide (1L/8H)', create_arch_3_nanogpt_wide),
@@ -276,4 +294,7 @@ ALL_ARCHITECTURES: List[Tuple[(str, Any)]] = [
     ('Arch 7: Dual-Flow Pipeline', create_arch_7_dual_flow_pipeline),
     ('Arch 8: ResMLP Residual Network', create_arch_8_resmlp),
     ('Arch 9: Multi-Head Projection', create_arch_9_multihead_projection),
-    ('Arch 10: Multi-Task Joint Network', create_arch_10_multitask_network)] + EXTENDED_ARCHITECTURES
+    ('Arch 10: Multi-Task Joint Network', create_arch_10_multitask_network),
+] + EXTENDED_ARCHITECTURES + [
+    ('Arch 26: Llama Tiny', create_arch_26_llama_tiny),
+]

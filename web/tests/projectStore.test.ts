@@ -76,4 +76,61 @@ describe('project browser persistence', () => {
     expect(useProjectStore.getState().openGraphId).toBe(project.ui.open_graph_id);
   });
 
+  it('creates an editable module copy with custom graph and lineage', () => {
+    const project = createInitialProject();
+    project.model.graphs.graph_mlp = {
+      id: 'graph_mlp',
+      name: 'MLP',
+      kind: 'module',
+      interface: { inputs: [], outputs: [] },
+      nodes: [],
+      edges: [],
+    };
+    const rootId = project.model.root_graph_id;
+    project.model.graphs[rootId].nodes.push({
+      id: 'node_mlp_1',
+      definition_id: 'builtin.nanogpt_mlp@1',
+      display_name: 'MLP Block',
+      properties: {},
+      metadata: { breakpoint: false, disabled: false },
+    });
+    project.ui.open_graph_id = rootId;
+
+    useProjectStore.getState().loadProject(project);
+    useProjectStore.getState().createEditableModuleCopy('node_mlp_1');
+
+    const updated = useProjectStore.getState().project;
+    const copiedNode = updated.model.graphs[rootId].nodes.find((n) => n.id === 'node_mlp_1');
+    expect(copiedNode).toBeDefined();
+    expect(copiedNode?.definition_id).toMatch(/^custom\.graph_custom_/);
+
+    const suffix = copiedNode!.definition_id.slice('custom.'.length);
+    expect(updated.model.graphs[suffix]).toBeDefined();
+    expect(updated.model.graphs[suffix].derived_from).toBe('builtin.nanogpt_mlp@1');
+    expect(updated.model.graphs[suffix].modified).toBe(true);
+    expect(updated.model.graphs.graph_mlp).toBeDefined();
+  });
+
+  it('toggleNodeCollapsed persists and restores ui.collapsed_node_ids', () => {
+    const project = createInitialProject();
+    const rootId = project.model.root_graph_id;
+    useProjectStore.getState().loadProject(project);
+
+    useProjectStore.getState().toggleNodeCollapsed('node_to_collapse');
+    expect(useProjectStore.getState().project.ui.collapsed_node_ids?.[rootId]).toEqual(['node_to_collapse']);
+
+    const savedJson = localStorage.getItem(PROJECT_STORAGE_KEY);
+    expect(savedJson).not.toBeNull();
+
+    useProjectStore.getState().loadProject(createInitialProject());
+    localStorage.setItem(PROJECT_STORAGE_KEY, savedJson as string);
+
+    const restored = readPersistedProject();
+    if (restored.status !== 'loaded') {
+      throw new Error(`Expected a saved project, received ${restored.status}`);
+    }
+
+    useProjectStore.getState().loadProject(restored.project);
+    expect(useProjectStore.getState().project.ui.collapsed_node_ids?.[rootId]).toEqual(['node_to_collapse']);
+  });
 });

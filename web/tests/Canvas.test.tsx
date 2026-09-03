@@ -1,14 +1,17 @@
-import { act, render } from '@testing-library/react';
+import { act, createEvent, fireEvent, render } from '@testing-library/react';
 import type { Connection } from '@xyflow/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Edge, NodeDefinitionSummary, Project } from '../src/api/contracts';
 
 interface ReactFlowMockProps {
-  onConnect: (connection: Connection) => void;
+  onConnect?: (connection: Connection) => void;
+  onEdgeDoubleClick?: (event: React.MouseEvent, edge: { id: string }) => void;
 }
 
 const flowHarness = vi.hoisted(() => ({
   onConnect: undefined as ReactFlowMockProps['onConnect'] | undefined,
+  onEdgeDoubleClick: undefined as ReactFlowMockProps['onEdgeDoubleClick'] | undefined,
+  fitView: vi.fn(),
 }));
 
 vi.mock('@xyflow/react', () => ({
@@ -20,19 +23,23 @@ vi.mock('@xyflow/react', () => ({
   Handle: () => null,
   MiniMap: () => null,
   Position: { Left: 'left', Right: 'right' },
-  ReactFlow: ({ onConnect }: ReactFlowMockProps) => {
-    flowHarness.onConnect = onConnect;
+  SelectionMode: { Partial: 'partial', Full: 'full' },
+  ReactFlow: (props: ReactFlowMockProps) => {
+    flowHarness.onConnect = props.onConnect;
+    flowHarness.onEdgeDoubleClick = props.onEdgeDoubleClick;
     return null;
   },
   getBezierPath: () => ['', 0, 0],
   useReactFlow: () => ({
     screenToFlowPosition: ({ x, y }: { x: number; y: number }) => ({ x, y }),
+    fitView: flowHarness.fitView,
   }),
 }));
 
 import { Canvas, validateConnection } from '../src/canvas/Canvas';
 import { createInitialProject, useProjectStore } from '../src/stores/projectStore';
 import { useTraceStore } from '../src/stores/traceStore';
+import { useUIStore } from '../src/stores/uiStore';
 
 const catalog: NodeDefinitionSummary[] = [
   {
@@ -74,6 +81,35 @@ const catalog: NodeDefinitionSummary[] = [
       },
     ],
     default_outputs: [],
+  },
+  {
+    type_id: 'test.middle@1',
+    version: 1,
+    display_name: 'Middle Node',
+    category: 'Layers',
+    description: 'Test middle node for splicing',
+    is_composite: false,
+    property_schema: {},
+    default_inputs: [
+      {
+        id: 'in',
+        display_name: 'In',
+        direction: 'input',
+        kind: 'data',
+        multiplicity: 'single',
+        tensor_type: { dtype_family: 'floating' },
+      },
+    ],
+    default_outputs: [
+      {
+        id: 'out',
+        display_name: 'Out',
+        direction: 'output',
+        kind: 'data',
+        multiplicity: 'multiple',
+        tensor_type: { dtype_family: 'floating' },
+      },
+    ],
   },
 ];
 
@@ -182,5 +218,255 @@ describe('Canvas connection authoring', () => {
       throw new Error('Expected the occupied single-input port to be rejected');
     }
     expect(result.reason).toMatch(/only one connection/i);
+  });
+  it('deletes selected node on Delete key and restores on Ctrl+Z', () => {
+    const project = createConnectionProject();
+    project.model.graphs.graph_test.nodes.push({
+      id: 'n1',
+      definition_id: 'test.source@1',
+      display_name: 'Node 1',
+      properties: {},
+      metadata: { breakpoint: false, disabled: false },
+    });
+
+    useProjectStore.setState({
+      project,
+      openGraphId: 'graph_test',
+    });
+
+    render(<Canvas catalog={catalog} />);
+
+    act(() => {
+      useUIStore.getState().selectNode('n1');
+    });
+
+    act(() => {
+      fireEvent.keyDown(window, { key: 'Delete' });
+    });
+
+    expect(
+      useProjectStore.getState().project.model.graphs.graph_test.nodes.find((n) => n.id === 'n1')
+    ).toBeUndefined();
+
+    act(() => {
+      fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
+    });
+
+    expect(
+      useProjectStore.getState().project.model.graphs.graph_test.nodes.find((n) => n.id === 'n1')
+    ).toBeDefined();
+  });
+  it('copies and pastes selected nodes via Ctrl+C and Ctrl+V', () => {
+    const project = createConnectionProject();
+    project.model.graphs.graph_test.nodes.push({
+      id: 'n1',
+      definition_id: 'test.source@1',
+      display_name: 'Node 1',
+      properties: {},
+      metadata: { breakpoint: false, disabled: false },
+    });
+
+    useProjectStore.setState({
+      project,
+      openGraphId: 'graph_test',
+    });
+
+    render(<Canvas catalog={catalog} />);
+
+    act(() => {
+      useUIStore.getState().selectNodes(['n1']);
+    });
+
+    act(() => {
+      fireEvent.keyDown(window, { key: 'c', ctrlKey: true });
+    });
+
+    act(() => {
+      fireEvent.keyDown(window, { key: 'v', ctrlKey: true });
+    });
+
+    const nodes = useProjectStore.getState().project.model.graphs.graph_test.nodes;
+    expect(nodes.length).toBe(4);
+    expect(nodes.some((n) => n.id.startsWith('node_source_'))).toBe(true);
+  });
+
+  it('duplicates selected nodes via Ctrl+D', () => {
+    const project = createConnectionProject();
+    project.model.graphs.graph_test.nodes.push({
+      id: 'n1',
+      definition_id: 'test.source@1',
+      display_name: 'Node 1',
+      properties: {},
+      metadata: { breakpoint: false, disabled: false },
+    });
+
+    useProjectStore.setState({
+      project,
+      openGraphId: 'graph_test',
+    });
+
+    render(<Canvas catalog={catalog} />);
+
+    act(() => {
+      useUIStore.getState().selectNodes(['n1']);
+    });
+
+    act(() => {
+      fireEvent.keyDown(window, { key: 'd', ctrlKey: true });
+    });
+
+    const nodes = useProjectStore.getState().project.model.graphs.graph_test.nodes;
+    expect(nodes.length).toBe(4);
+  });
+  it('splices a dropped node onto an existing wire between two connected nodes', () => {
+    const project = createConnectionProject();
+    project.ui.node_positions.graph_test = {
+      source: { x: 100, y: 100 },
+      target: { x: 300, y: 100 },
+    };
+    project.model.graphs.graph_test.edges.push({
+      id: 'e_orig',
+      source: { node_id: 'source', port_id: 'out' },
+      target: { node_id: 'target', port_id: 'in' },
+    });
+
+    useProjectStore.setState({
+      project,
+      openGraphId: 'graph_test',
+    });
+
+    const { container } = render(<Canvas catalog={catalog} />);
+    const canvasDiv = container.firstChild as HTMLElement;
+
+    act(() => {
+      const dropEvent = createEvent.drop(canvasDiv);
+      Object.defineProperty(dropEvent, 'clientX', { value: 200 });
+      Object.defineProperty(dropEvent, 'clientY', { value: 100 });
+      Object.defineProperty(dropEvent, 'dataTransfer', {
+        value: {
+          getData: (format: string) => (format === 'application/bptorch-node' ? 'test.middle@1' : ''),
+        },
+      });
+      fireEvent(canvasDiv, dropEvent);
+    });
+    const g = useProjectStore.getState().project.model.graphs.graph_test;
+    // Original edge should be removed
+    expect(g.edges.some((e) => e.id === 'e_orig')).toBe(false);
+    // Middle node should be added
+    const middleNode = g.nodes.find((n) => n.definition_id === 'test.middle@1');
+    expect(middleNode).toBeDefined();
+    // Two rewired edges should exist connecting source -> middle and middle -> target
+    expect(g.edges.some((e) => e.source.node_id === 'source' && e.target.node_id === middleNode!.id)).toBe(true);
+    expect(g.edges.some((e) => e.source.node_id === middleNode!.id && e.target.node_id === 'target')).toBe(true);
+  });
+
+  it('groups selected nodes into a new module graph via Ctrl+G', () => {
+    const project = createConnectionProject();
+    project.model.graphs.graph_test.nodes.push({
+      id: 'n1',
+      definition_id: 'test.source@1',
+      display_name: 'Node 1',
+      properties: {},
+      metadata: { breakpoint: false, disabled: false },
+    });
+
+    useProjectStore.setState({
+      project,
+      openGraphId: 'graph_test',
+    });
+
+    render(<Canvas catalog={catalog} />);
+
+    act(() => {
+      useUIStore.getState().selectNodes(['n1']);
+    });
+
+    act(() => {
+      fireEvent.keyDown(window, { key: 'g', ctrlKey: true });
+    });
+
+    const currentNodes = useProjectStore.getState().project.model.graphs.graph_test.nodes;
+    expect(currentNodes.some((n) => n.definition_id.startsWith('custom.graph_custom_'))).toBe(true);
+    const graphKeys = Object.keys(useProjectStore.getState().project.model.graphs);
+    expect(graphKeys.some((k) => k.startsWith('graph_custom_'))).toBe(true);
+  });
+
+  it('nudges selected nodes by 10px on ArrowRight keydown', () => {
+    const project = createConnectionProject();
+    project.model.graphs.graph_test.nodes.push({
+      id: 'n_nudge',
+      definition_id: 'test.source@1',
+      display_name: 'Node Nudge',
+      properties: {},
+      metadata: { breakpoint: false, disabled: false },
+    });
+    project.ui.node_positions.graph_test = {
+      n_nudge: { x: 50, y: 50 },
+    };
+
+    useProjectStore.setState({
+      project,
+      openGraphId: 'graph_test',
+    });
+
+    render(<Canvas catalog={catalog} />);
+
+    act(() => {
+      useUIStore.getState().selectNodes(['n_nudge']);
+    });
+
+    act(() => {
+      fireEvent.keyDown(window, { key: 'ArrowRight' });
+    });
+
+    const pos = useProjectStore.getState().project.ui.node_positions.graph_test?.n_nudge;
+    expect(pos?.x).toBe(60);
+  });
+
+  it('appends an edge waypoint on edge double click', () => {
+    const project = createConnectionProject();
+    project.ui.edge_waypoints = {};
+
+    useProjectStore.setState({
+      project,
+      openGraphId: 'graph_test',
+    });
+
+    render(<Canvas catalog={catalog} />);
+
+    act(() => {
+      flowHarness.onEdgeDoubleClick?.(
+        { clientX: 150, clientY: 120, preventDefault: () => {} } as unknown as React.MouseEvent,
+        { id: 'e_test' }
+      );
+    });
+
+    const waypoints = useProjectStore.getState().project.ui.edge_waypoints?.graph_test?.e_test;
+    expect(waypoints).toBeDefined();
+    expect(waypoints?.length).toBe(1);
+    expect(waypoints?.[0]).toEqual({ x: 150, y: 120 });
+  });
+
+  it('triggers fitView on Shift+2 keydown for selected nodes', () => {
+    const project = createConnectionProject();
+    useProjectStore.setState({
+      project,
+      openGraphId: 'graph_test',
+    });
+
+    render(<Canvas catalog={catalog} />);
+
+    act(() => {
+      useUIStore.getState().selectNodes(['source', 'target']);
+    });
+
+    act(() => {
+      fireEvent.keyDown(window, { key: '2', shiftKey: true });
+    });
+
+    expect(flowHarness.fitView).toHaveBeenCalledWith({
+      nodes: [{ id: 'source' }, { id: 'target' }],
+      padding: 0.2,
+    });
   });
 });

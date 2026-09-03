@@ -47,8 +47,8 @@ describe('traceStore session lifecycle', () => {
       loss_history: [],
       best_loss: null,
       node_gradient_norms: { 'node_a.weight': 0.5 },
+      parameter_norms: { 'node_a.weight': 1.2 },
     });
-
     useTraceStore.getState().handleTraceEvent({
       sequence: 1,
       event: 'batch_ended',
@@ -71,5 +71,6 @@ describe('traceStore session lifecycle', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(useTraceStore.getState().nodeGradientNorms).toEqual({ 'node_a.weight': 0.5 });
+    expect(useTraceStore.getState().parameterNorms).toEqual({ 'node_a.weight': 1.2 });
   });
 });

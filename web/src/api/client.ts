@@ -44,6 +44,22 @@ export class ApiClient {
     if (!res.ok) throw new Error(`Validation failed: ${res.statusText}`);
     return res.json();
   }
+  static async cookExport(
+    project: Project,
+    outputPath?: string
+  ): Promise<{ code: string; output_path: string | null }> {
+    const res = await fetch(`${API_BASE}/cook/export`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project, output_path: outputPath }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || `Cook export failed: ${res.statusText}`);
+    }
+    return res.json();
+  }
+
 
   static async compileModel(
     project: Project,
@@ -159,8 +175,8 @@ export class ApiClient {
 
   static async updateHyperparameters(
     sessionId: string,
-    params: { learning_rate?: number; weight_decay?: number; grad_clip?: number }
-  ): Promise<{ status: string; learning_rate: number; weight_decay: number; grad_clip: number }> {
+    params: { learning_rate?: number; weight_decay?: number; grad_clip?: number; batch_size?: number }
+  ): Promise<{ status: string; learning_rate: number; weight_decay: number; grad_clip: number; batch_size?: number }> {
     const res = await fetch(`${API_BASE}/sessions/${sessionId}/hyperparameters`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -195,6 +211,52 @@ export class ApiClient {
     if (!res.ok) throw new Error(`Failed to load checkpoint: ${res.statusText}`);
     return res.json();
   }
+  static async listCheckpoints(
+    sessionId: string
+  ): Promise<{ status: string; checkpoints: Array<{ name: string; path: string; size_bytes: number; modified: number }> }> {
+    const res = await fetch(`${API_BASE}/sessions/${sessionId}/checkpoints`);
+    if (!res.ok) throw new Error(`Failed to list checkpoints: ${res.statusText}`);
+    return res.json();
+  }
+
+  static async uploadDataset(
+    sessionId: string,
+    text: string
+  ): Promise<{ status: string; num_samples: number }> {
+    const res = await fetch(`${API_BASE}/sessions/${sessionId}/dataset/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) throw new Error(`Failed to upload dataset: ${res.statusText}`);
+    return res.json();
+  }
+
+  static async runValidation(
+    sessionId: string
+  ): Promise<{ status: string; val_loss: number; val_samples: number }> {
+    const res = await fetch(`${API_BASE}/sessions/${sessionId}/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) throw new Error(`Failed to run validation: ${res.statusText}`);
+    return res.json();
+  }
+
+  static async setDataset(
+    sessionId: string,
+    name: 'synthetic' | 'tiny_shakespeare',
+    val_fraction: number = 0.1
+  ): Promise<{ status: string; name: string; num_samples: number }> {
+    const res = await fetch(`${API_BASE}/sessions/${sessionId}/dataset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, val_fraction }),
+    });
+    if (!res.ok) throw new Error(`Failed to set dataset: ${res.statusText}`);
+    return res.json();
+  }
+
 
   static async getMetrics(
     sessionId: string
@@ -203,6 +265,7 @@ export class ApiClient {
     loss_history: Array<{ step: number; loss: number; lr: number; grad_norm: number; tokens_per_sec: number }>;
     best_loss: number | null;
     node_gradient_norms: Record<string, number>;
+    parameter_norms: Record<string, number>;
   }> {
     const res = await fetch(`${API_BASE}/sessions/${sessionId}/metrics`);
     if (!res.ok) throw new Error(`Failed to fetch metrics: ${res.statusText}`);
@@ -214,6 +277,31 @@ export class ApiClient {
     if (!res.ok) throw new Error(`Failed to fetch tensor summary: ${res.statusText}`);
     return res.json();
   }
+  static async generate(
+    sessionId: string,
+    body: {
+      prompt: string;
+      max_new_tokens?: number;
+      temperature?: number;
+      top_k?: number;
+      top_p?: number;
+      template?: 'raw' | 'chatml' | 'alpaca' | 'llama3';
+      use_cache?: boolean;
+      stream?: boolean;
+    }
+  ): Promise<{ status: string; token_ids?: number[]; text?: string }> {
+    const res = await fetch(`${API_BASE}/sessions/${sessionId}/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || `Generation failed: ${res.statusText}`);
+    }
+    return res.json();
+  }
+
 
   static connectTraceWebSocket(
     sessionId: string,
@@ -253,6 +341,33 @@ export class ApiClient {
   static async getAvailableTests(): Promise<AvailableTestInfo[]> {
     const res = await fetch(`${API_BASE}/test/suites`);
     if (!res.ok) throw new Error(`Failed to load test suites: ${res.statusText}`);
+    return res.json();
+  }
+
+  static async importPytorch(
+    code: string,
+    className?: string
+  ): Promise<{ status: string; project: Project }> {
+    const res = await fetch(`${API_BASE}/import/pytorch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, class_name: className }),
+    });
+    if (!res.ok) {
+      let detailMsg = `Import failed: ${res.statusText}`;
+      try {
+        const errorJson = await res.json();
+        if (errorJson?.detail) {
+          detailMsg =
+            typeof errorJson.detail === 'string'
+              ? errorJson.detail
+              : errorJson.detail.message || JSON.stringify(errorJson.detail);
+        }
+      } catch {
+        // ignore json parse error
+      }
+      throw new Error(detailMsg);
+    }
     return res.json();
   }
 }

@@ -464,3 +464,275 @@ class ManualCausalAttentionNode(NodeDefinition):
             module_type="nn_module",
             factory=lambda: ManualAttentionModule(),
         )
+
+
+@register_node
+class RoPENode(NodeDefinition):
+    type_id = "builtin.rope@1"
+    version = 1
+    display_name = "Rotary Position Embedding (RoPE)"
+    category = "Attention"
+    description = "Applies rotary position embeddings to query or key tensor."
+    icon = "RotateCw"
+
+    def property_schema(self) -> Dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "head_dim": {"type": ["integer", "object"], "default": 32},
+                "n_head": {
+                    "type": ["integer", "object"],
+                    "default": {"kind": "config_ref", "key": "n_head"},
+                },
+                "base": {"type": "number", "default": 10000.0},
+            },
+        }
+
+    def input_ports(
+        self,
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> List[PortDefinition]:
+        return [
+            PortDefinition(
+                id="input",
+                display_name="Input (Q or K)",
+                direction="input",
+                required=True,
+                tensor_type=TensorType(dtype_family="floating"),
+            ),
+            PortDefinition(
+                id="positions",
+                display_name="Positions",
+                direction="input",
+                required=False,
+                tensor_type=TensorType(dtype_family="integer"),
+            ),
+        ]
+
+    def output_ports(
+        self,
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> List[PortDefinition]:
+        return [
+            PortDefinition(
+                id="output",
+                display_name="Rotated",
+                direction="output",
+                tensor_type=TensorType(dtype_family="floating"),
+            )
+        ]
+
+    def infer_shapes(
+        self,
+        inputs: Dict[str, TensorSpec],
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> Dict[str, TensorSpec]:
+        in_spec = inputs.get("input")
+        if in_spec:
+            return {"output": TensorSpec(dtype=in_spec.dtype, shape=list(in_spec.shape))}
+        return {
+            "output": TensorSpec(
+                dtype="float32",
+                shape=[SymbolDim(name="B"), SymbolDim(name="T"), SymbolDim(name="C")],
+            )
+        }
+
+    def build_runtime(
+        self,
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> RuntimeModuleSpec:
+        cfg = context.model_config if context else {}
+        head_dim_prop = evaluate_value(properties.get("head_dim", 32), cfg)
+        head_dim = int(head_dim_prop) if isinstance(head_dim_prop, (int, float)) else 32
+        n_head_prop = evaluate_value(properties.get("n_head", 4), cfg)
+        n_head = int(n_head_prop) if isinstance(n_head_prop, (int, float)) else 4
+        base = float(evaluate_value(properties.get("base", 10000.0), cfg))
+
+        def apply_rope(x: torch.Tensor, positions: Optional[torch.Tensor] = None) -> torch.Tensor:
+            orig_shape = x.shape
+            orig_dim = x.dim()
+
+            if orig_dim == 3:
+                B, T, C = x.shape
+                d = C // n_head
+                x_4d = x.view(B, T, n_head, d).transpose(1, 2)
+            elif orig_dim == 4:
+                x_4d = x
+            else:
+                return x
+
+            D = x_4d.size(-1)
+            T = x_4d.size(-2)
+            device = x.device
+
+            inv_freq = 1.0 / (base ** (torch.arange(0, D, 2, device=device, dtype=torch.float32) / D))
+
+            if positions is not None:
+                t = positions.to(dtype=torch.float32, device=device)
+            else:
+                t = torch.arange(T, device=device, dtype=torch.float32)
+
+            freqs = torch.outer(t, inv_freq)
+            cos = freqs.cos().unsqueeze(0).unsqueeze(0)
+            sin = freqs.sin().unsqueeze(0).unsqueeze(0)
+
+            x1 = x_4d[..., ::2]
+            x2 = x_4d[..., 1::2]
+
+            even_rot = x1 * cos - x2 * sin
+            odd_rot = x1 * sin + x2 * cos
+
+            rotated = torch.stack([even_rot, odd_rot], dim=-1).flatten(-2)
+
+            if orig_dim == 3:
+                return rotated.transpose(1, 2).contiguous().view(orig_shape)
+            return rotated
+
+        return RuntimeModuleSpec(
+            module_type="functional",
+            factory=lambda: apply_rope,
+            kwargs={"head_dim": head_dim, "n_head": n_head, "base": base},
+        )
+
+
+@register_node
+class GroupedQueryAttentionNode(NodeDefinition):
+    type_id = "builtin.grouped_query_attention@1"
+    version = 1
+    display_name = "Grouped Query Attention (GQA)"
+    category = "Attention"
+    description = "Grouped Query Attention with repeated KV heads and causal masking."
+    icon = "Zap"
+
+    def property_schema(self) -> Dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "n_head": {
+                    "type": ["integer", "object"],
+                    "default": {"kind": "config_ref", "key": "n_head"},
+                },
+                "n_kv_head": {
+                    "type": ["integer", "object"],
+                    "default": {"kind": "config_ref", "key": "n_kv_head"},
+                },
+                "dropout": {
+                    "type": ["number", "object"],
+                    "default": {"kind": "config_ref", "key": "dropout"},
+                },
+            },
+            "required": ["n_head"],
+        }
+
+    def input_ports(
+        self,
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> List[PortDefinition]:
+        return [
+            PortDefinition(
+                id="q",
+                display_name="Query",
+                direction="input",
+                required=True,
+                tensor_type=TensorType(dtype_family="floating"),
+            ),
+            PortDefinition(
+                id="k",
+                display_name="Key",
+                direction="input",
+                required=True,
+                tensor_type=TensorType(dtype_family="floating"),
+            ),
+            PortDefinition(
+                id="v",
+                display_name="Value",
+                direction="input",
+                required=True,
+                tensor_type=TensorType(dtype_family="floating"),
+            ),
+        ]
+
+    def output_ports(
+        self,
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> List[PortDefinition]:
+        return [
+            PortDefinition(
+                id="output",
+                display_name="Attended",
+                direction="output",
+                tensor_type=TensorType(dtype_family="floating"),
+            )
+        ]
+
+    def infer_shapes(
+        self,
+        inputs: Dict[str, TensorSpec],
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> Dict[str, TensorSpec]:
+        spec_q = inputs.get("q")
+        if spec_q:
+            return {"output": TensorSpec(dtype=spec_q.dtype, shape=list(spec_q.shape))}
+        return {
+            "output": TensorSpec(
+                dtype="float32",
+                shape=[SymbolDim(name="B"), SymbolDim(name="T"), SymbolDim(name="C")],
+            )
+        }
+
+    def build_runtime(
+        self,
+        properties: Dict[str, Any],
+        context: Optional[NodeValidationContext] = None,
+    ) -> RuntimeModuleSpec:
+        cfg = context.model_config if context else {}
+        n_head = int(evaluate_value(properties.get("n_head", 4), cfg))
+        n_kv_head_val = evaluate_value(properties.get("n_kv_head", n_head), cfg)
+        n_kv_head = int(n_kv_head_val) if n_kv_head_val is not None else n_head
+        dropout_p = float(evaluate_value(properties.get("dropout", 0.0), cfg))
+
+        def run_gqa(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
+            B, T_q, C_q = q.size(0), q.size(1), q.size(-1)
+            head_dim = C_q // n_head
+
+            if q.dim() == 3:
+                q_heads = q.view(B, T_q, n_head, head_dim).transpose(1, 2)
+            else:
+                q_heads = q
+
+            if k.dim() == 3:
+                T_k = k.size(1)
+                kv_dim = k.size(-1)
+                kv_head_dim = kv_dim // n_kv_head
+                if kv_head_dim != head_dim and kv_dim == C_q:
+                    # If k was projected with out_features=n_embd, slice down to n_kv_head * head_dim
+                    k = k[..., : n_kv_head * head_dim]
+                    v = v[..., : n_kv_head * head_dim]
+                    kv_head_dim = head_dim
+                k_heads = k.view(B, T_k, n_kv_head, kv_head_dim).transpose(1, 2)
+                v_heads = v.view(B, T_k, n_kv_head, kv_head_dim).transpose(1, 2)
+            else:
+                k_heads = k
+                v_heads = v
+
+            if n_head != n_kv_head:
+                reps = n_head // n_kv_head
+                k_heads = torch.repeat_interleave(k_heads, reps, dim=1)
+                v_heads = torch.repeat_interleave(v_heads, reps, dim=1)
+            out = F.scaled_dot_product_attention(
+                q_heads, k_heads, v_heads, is_causal=True, dropout_p=dropout_p
+            )
+            return out.transpose(1, 2).contiguous().view(B, T_q, n_head * head_dim)
+
+        return RuntimeModuleSpec(
+            module_type="functional",
+            factory=lambda: run_gqa,
+            kwargs={"n_head": n_head, "n_kv_head": n_kv_head, "dropout": dropout_p},
+        )

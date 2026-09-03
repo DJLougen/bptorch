@@ -5,7 +5,7 @@ from unittest.mock import patch
 import torch
 from fastapi.testclient import TestClient
 from neural_blueprint.api.main import app
-from neural_blueprint.ir.models import TrainingConfig
+from neural_blueprint.ir.models import NodeInstance, TrainingConfig
 from neural_blueprint.ir.serialization import serialize_project
 from neural_blueprint.paths import resolve_sandbox_path
 from neural_blueprint.runtime.training_capabilities import (
@@ -31,6 +31,14 @@ def client():
 
 def test_cook_export_rejects_unsupported_topology(client):
     project = create_arch_5_bottleneck_mlp()
+    project.model.graphs[project.model.root_graph_id].nodes.append(
+        NodeInstance(
+            id="node_loader",
+            definition_id="builtin.dataloader@1",
+            display_name="Data Loader",
+            properties={},
+        )
+    )
     response = client.post(
         "/api/v1/cook/export",
         json={"project": serialize_project(project)},

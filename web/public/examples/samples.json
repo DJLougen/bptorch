@@ -1,8 +1,8 @@
 {
   "version": 1,
   "title": "bpTorch Sample Gallery",
-  "description": "25 trainable architecture demonstrations showcasing the diversity of visual blueprint programming.",
-  "count": 25,
+  "description": "26 trainable architecture demonstrations showcasing the diversity of visual blueprint programming.",
+  "count": 26,
   "samples": [
     {
       "id": "arch_1_nanogpt_tiny",
@@ -410,6 +410,24 @@
       "path": "/examples/arch_25_metric_pipeline/arch_25_metric_pipeline.nbp.json",
       "node_count": 11,
       "graph_count": 1
+    },
+    {
+      "id": "arch_26_llama_tiny",
+      "name": "Arch 26: Llama Tiny",
+      "category": "Transformers",
+      "description": "Modern Llama-style Transformer with RMSNorm, RoPE, SwiGLU, and Grouped Query Attention (GQA).",
+      "highlight": "State-of-the-art open-weights architecture blueprint with rotary embeddings and GQA.",
+      "tags": [
+        "llama",
+        "rmsnorm",
+        "rope",
+        "swiglu",
+        "gqa"
+      ],
+      "difficulty": "advanced",
+      "path": "/examples/arch_26_llama_tiny/arch_26_llama_tiny.nbp.json",
+      "node_count": 32,
+      "graph_count": 6
     }
   ]
 }

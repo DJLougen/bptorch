@@ -49,7 +49,9 @@ async def test_training_session_step_batch(tiny_nanogpt_project):
     assert all(losses[i] >= losses[i + 1] for i in range(len(losses) - 1)), (
         f"Losses did not strictly decrease: {losses}"
     )
-
+    assert isinstance(session.parameter_norms, dict)
+    assert len(session.parameter_norms) > 0
+    assert all(isinstance(v, float) for v in session.parameter_norms.values())
 
 @pytest.mark.asyncio
 async def test_training_session_hyperparameter_update(tiny_nanogpt_project):
@@ -137,3 +139,29 @@ async def test_training_session_checkpoint_save_and_continuous_step_parity(
 
     # 6. Verify final step 4 loss is identical
     assert abs(session_restored.metrics.loss - cont_losses[3]) <= 1e-5
+
+@pytest.mark.asyncio
+async def test_shakespeare_dataset_finite_loss():
+    import math
+    from neural_blueprint.ir.models import NodeInstance
+    from neural_blueprint.templates.nanogpt import create_nanogpt_template
+
+    project = create_nanogpt_template(block_size=8, vocab_size=64, n_layer=2, n_head=2, n_embd=16)
+    root_g = project.model.graphs[project.model.root_graph_id]
+    root_g.nodes.append(
+        NodeInstance(
+            id="node_dataset_test",
+            definition_id="builtin.dataset_source@1",
+            display_name="Shakespeare Dataset",
+            properties={"dataset_name": "tiny_shakespeare", "synthetic": False},
+        )
+    )
+
+    session = TrainingSession("sess_shake", project, device="cpu")
+    assert len(session.dataset_x) > 0
+
+    await session.step_batch()
+    await session.step_batch()
+
+    assert session.metrics is not None
+    assert math.isfinite(session.metrics.loss)

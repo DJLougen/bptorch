@@ -3,7 +3,7 @@
 from collections import defaultdict, deque
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from neural_blueprint.ir.models import GraphDefinition, TensorSpec
+from neural_blueprint.ir.models import GraphDefinition, SymbolDim, TensorSpec
 from neural_blueprint.registry.base import NodeValidationContext
 from neural_blueprint.registry.registry import NodeRegistry, global_registry
 
@@ -90,8 +90,22 @@ class ShapePropagator:
 
             node_def = self.registry.get(node.definition_id)
             if not node_def:
+                if node.definition_id.startswith("custom.") and graph_definitions:
+                    subgraph_id = node.definition_id[len("custom."):]
+                    subgraph = graph_definitions.get(subgraph_id)
+                    if subgraph:
+                        node_inputs: Dict[str, TensorSpec] = {}
+                        for port_id, (src_id, src_port) in inbound_edges.get(node_id, {}).items():
+                            if src_id in resolved_shapes and src_port in resolved_shapes[src_id]:
+                                node_inputs[port_id] = resolved_shapes[src_id][src_port]
+                        in_spec = node_inputs.get("input") or (next(iter(node_inputs.values())) if node_inputs else None)
+                        fallback_spec = in_spec or TensorSpec(
+                            dtype="float32",
+                            shape=[SymbolDim(name="B"), SymbolDim(name="T"), SymbolDim(name="C")],
+                        )
+                        for port in subgraph.interface.outputs:
+                            resolved_shapes[node_id][port.id] = fallback_spec
                 continue
-
             # Gather input port specs from connected source outputs
             node_inputs: Dict[str, TensorSpec] = {}
             for port_id, (src_id, src_port) in inbound_edges.get(node_id, {}).items():

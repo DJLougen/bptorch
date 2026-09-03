@@ -67,7 +67,7 @@ export const App: React.FC = () => {
         }
 
         loadProject(data);
-        addLog('info', 'Loaded Arch 1: nanoGPT Tiny. Open Templates → Architecture Samples to browse all 25 architectures.');
+        addLog('info', 'Loaded Arch 1: nanoGPT Tiny. Open Templates → Architecture Samples to browse all 26 architectures.');
       })
       .catch((error) => {
         addLog(

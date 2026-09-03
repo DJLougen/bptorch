@@ -24,6 +24,7 @@ _STOP_DEFINITION_IDS = frozenset(
         "builtin.cosine_annealing_lr@1",
         "builtin.linear_warmup_scheduler@1",
         "builtin.step_lr@1",
+        "builtin.comment@1",
     }
 )
 

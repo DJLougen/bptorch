@@ -164,7 +164,9 @@
           }
         ],
         "repeat_count": null,
-        "target_graph_id": null
+        "target_graph_id": null,
+        "derived_from": null,
+        "modified": false
       }
     },
     "weight_bindings": []
@@ -201,6 +203,8 @@
         }
       }
     },
-    "open_graph_id": "graph_mlp"
+    "open_graph_id": "graph_mlp",
+    "collapsed_node_ids": {},
+    "edge_waypoints": {}
   }
 }

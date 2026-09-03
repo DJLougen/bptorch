@@ -39,9 +39,9 @@ function getNodeParamShapes(summary: unknown): Record<string, number[]> {
 }
 
 export const PropertyInspector: React.FC<{ catalog: NodeDefinitionSummary[] }> = ({ catalog }) => {
-  const { project, openGraphId, updateNodeProperty, updateModelConfig, createEditableModuleCopy } =
+  const { project, openGraphId, updateNodeProperty, updateModelConfig, createEditableModuleCopy, updateNodeMetadata } =
     useProjectStore();
-  const { selectedNodeId, selectedEdgeId, selectNode, selectEdge, isInspectorOpen, toggleInspector } = useUIStore();
+  const { selectedNodeId, selectedEdgeId, selectNode, selectEdge, isInspectorOpen, toggleInspector, repeatInstanceIndex } = useUIStore();
   const { resolvedShapes, diagnostics, parameterSummary } = useValidationStore();
   const { retainedSummaries, trainingMetrics, updateHyperparameters } = useTraceStore();
 
@@ -347,7 +347,22 @@ export const PropertyInspector: React.FC<{ catalog: NodeDefinitionSummary[] }> =
 
   const configKeys = Object.keys(project.model.config);
   const nodeDiags = diagnostics.filter((d) => d.node_id === selectedNode.id);
-  const nodeTensorSummary = retainedSummaries[selectedNode.id] || retainedSummaries[`${selectedNode.id}:output`];
+  const repeatIndex = typeof repeatInstanceIndex === 'number' ? repeatInstanceIndex : useUIStore.getState().repeatInstanceIndex;
+  let nodeTensorSummary = null;
+  if (typeof repeatIndex === 'number') {
+    const indexedKey = `${selectedNode.id}[${repeatIndex}]`;
+    const summaryKeys = Object.keys(retainedSummaries);
+    const matchedKey = summaryKeys.find(
+      (k) => (k.includes(selectedNode.id) || k.startsWith(selectedNode.id)) && k.includes(`[${repeatIndex}]`)
+    );
+    nodeTensorSummary =
+      (matchedKey ? retainedSummaries[matchedKey] : null) ||
+      retainedSummaries[indexedKey] ||
+      retainedSummaries[`${indexedKey}:output`];
+  }
+  if (!nodeTensorSummary) {
+    nodeTensorSummary = retainedSummaries[selectedNode.id] || retainedSummaries[`${selectedNode.id}:output`];
+  }
   const nodeParamSummary = parameterSummary.breakdown_by_node?.[selectedNode.id];
   const paramShapes = getNodeParamShapes(nodeParamSummary);
 
@@ -576,6 +591,38 @@ export const PropertyInspector: React.FC<{ catalog: NodeDefinitionSummary[] }> =
                 </button>
               </div>
             )}
+            {/* Metadata: Disabled and Notes */}
+            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #1e293b', paddingTop: 8 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, cursor: 'pointer', color: '#e2e8f0' }}>
+                <input
+                  type="checkbox"
+                  aria-label="Disabled"
+                  checked={Boolean(selectedNode.metadata?.disabled)}
+                  onChange={(e) => updateNodeMetadata(selectedNode.id, { disabled: e.target.checked })}
+                />
+                Disabled
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, color: '#94a3b8' }}>
+                <span>Notes</span>
+                <textarea
+                  aria-label="Notes"
+                  value={selectedNode.metadata?.notes ?? ''}
+                  onChange={(e) => updateNodeMetadata(selectedNode.id, { notes: e.target.value })}
+                  placeholder="Node notes / description..."
+                  rows={2}
+                  style={{
+                    background: '#181b24',
+                    border: '1px solid #272c3b',
+                    color: '#e2e8f0',
+                    padding: '4px 6px',
+                    borderRadius: 4,
+                    fontSize: 11,
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                  }}
+                />
+              </label>
+            </div>
 
             {/* Diagnostics */}
             {nodeDiags.length > 0 && (

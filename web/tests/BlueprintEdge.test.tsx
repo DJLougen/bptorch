@@ -1,5 +1,5 @@
 import { fireEvent, render } from '@testing-library/react';
-import { Position } from '@xyflow/react';
+import { Position, ReactFlowProvider } from '@xyflow/react';
 import { describe, expect, it } from 'vitest';
 import { BlueprintEdge } from '../src/canvas/BlueprintEdge';
 import { useUIStore } from '../src/stores/uiStore';
@@ -19,11 +19,15 @@ describe('BlueprintEdge', () => {
   it('selects an edge without a shape label', () => {
     useUIStore.setState({ selectedEdgeId: null });
     const { container } = render(
-      <BlueprintEdge
-        id="e1"
-        {...baseEdgeProps}
-        data={{}}
-      />
+      <ReactFlowProvider>
+        <svg>
+          <BlueprintEdge
+            id="e1"
+            {...baseEdgeProps}
+            data={{}}
+          />
+        </svg>
+      </ReactFlowProvider>
     );
     const paths = Array.from(container.querySelectorAll('path')).filter(
       (path) => !path.closest('defs') && !path.classList.contains('blueprint-edge-flow')
@@ -35,12 +39,16 @@ describe('BlueprintEdge', () => {
 
   it('renders directional flow markers', () => {
     const { container } = render(
-      <BlueprintEdge
-        id="e2"
-        {...baseEdgeProps}
-        targetX={120}
-        data={{ isExec: false }}
-      />
+      <ReactFlowProvider>
+        <svg>
+          <BlueprintEdge
+            id="e2"
+            {...baseEdgeProps}
+            targetX={120}
+            data={{ isExec: false }}
+          />
+        </svg>
+      </ReactFlowProvider>
     );
 
     expect(container.querySelector('.blueprint-edge-flow')).not.toBeNull();

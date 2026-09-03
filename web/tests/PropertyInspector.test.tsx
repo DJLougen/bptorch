@@ -51,4 +51,38 @@ describe('PropertyInspector Component', () => {
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().project.model.graphs[graphId].nodes[0].display_name).toBe('Original');
   });
+
+  it('renders Disabled checkbox and Notes textarea when a node is selected', () => {
+    const base = useProjectStore.getState().project;
+    const graphId = base.model.root_graph_id;
+    const graph = base.model.graphs[graphId];
+    const nextProject = {
+      ...base,
+      model: {
+        ...base.model,
+        graphs: {
+          ...base.model.graphs,
+          [graphId]: {
+            ...graph,
+            nodes: [
+              {
+                id: 'node_b',
+                definition_id: 'builtin.linear@1',
+                display_name: 'Linear Layer',
+                properties: { in_features: 16, out_features: 16 },
+                metadata: { breakpoint: false, disabled: false, notes: 'Initial note' },
+              },
+            ],
+          },
+        },
+      },
+    };
+    useProjectStore.setState({ project: nextProject, openGraphId: graphId, isDirty: false, undoStack: [], redoStack: [] });
+    useUIStore.setState({ selectedNodeId: 'node_b' });
+
+    render(<PropertyInspector catalog={[]} />);
+    expect(screen.getByLabelText('Disabled')).toBeInTheDocument();
+    expect(screen.getByLabelText('Notes')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Initial note')).toBeInTheDocument();
+  });
 });

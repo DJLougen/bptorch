@@ -144,9 +144,17 @@ class BlueprintCooker:
         return True
 
     @classmethod
-    def cook(cls, project: Project) -> str:
+    def cook(cls, project: Project, mode: str = "train") -> str:
         """Generates a complete standalone train.py Python script string."""
-        profile = cls.detect_cook_profile(project)
+        from neural_blueprint.cooking.generic import cook_generic
+
+        if mode == "inference":
+            return cook_generic(project, mode="inference")
+
+        try:
+            profile = cls.detect_cook_profile(project)
+        except UnsupportedCookError:
+            return cook_generic(project, mode="train")
         cfg = project.model.config
         training_cfg = getattr(project.model, "training", None)
 
@@ -570,10 +578,10 @@ if __name__ == "__main__":
 '''
 
     @classmethod
-    def cook_to_file(cls, project: Project, output_path: Union[str, Path]) -> Path:
+    def cook_to_file(cls, project: Project, output_path: Union[str, Path], mode: str = "train") -> Path:
         """Cooks project and saves train.py script under the repo-local exports/ sandbox."""
         out = resolve_sandbox_path(str(output_path), "exports")
         out.parent.mkdir(parents=True, exist_ok=True)
-        code = cls.cook(project)
+        code = cls.cook(project, mode=mode)
         out.write_text(code, encoding="utf-8")
         return out

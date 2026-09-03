@@ -161,6 +161,8 @@ class GraphDefinition(BaseModel):
     # For repeated modules
     repeat_count: Optional[Union[int, ConfigRefValue]] = None
     target_graph_id: Optional[str] = None  # graph_id of the module definition being repeated
+    derived_from: Optional[str] = None
+    modified: bool = False
 
 
 # --- Weight Bindings ---
@@ -224,6 +226,10 @@ class UIState(BaseModel):
         default_factory=dict
     )  # graph_id -> node_id -> position
     open_graph_id: str = "graph_root"
+    collapsed_node_ids: Dict[str, List[str]] = Field(default_factory=dict)
+    edge_waypoints: Dict[str, Dict[str, List[NodePosition]]] = Field(
+        default_factory=dict
+    )
 
 
 # --- Project Container ---

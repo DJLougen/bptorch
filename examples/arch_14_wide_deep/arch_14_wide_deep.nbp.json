@@ -260,7 +260,9 @@
           }
         ],
         "repeat_count": null,
-        "target_graph_id": null
+        "target_graph_id": null,
+        "derived_from": null,
+        "modified": false
       }
     },
     "weight_bindings": []
@@ -268,6 +270,8 @@
   "ui": {
     "graph_viewports": {},
     "node_positions": {},
-    "open_graph_id": "graph_wide_deep"
+    "open_graph_id": "graph_wide_deep",
+    "collapsed_node_ids": {},
+    "edge_waypoints": {}
   }
 }

@@ -1,7 +1,7 @@
 """Contract tests and runtime verification for all primitive nodes."""
 
 import math
-
+import pytest
 import torch
 import torch.nn as nn
 from neural_blueprint.registry.base import NodeValidationContext
@@ -159,3 +159,74 @@ def test_nanogpt_initialization():
     # Check c_proj std is scaled
     expected_std = 0.02 / math.sqrt(2.0 * 2)
     assert abs(model.c_proj.weight.std().item() - expected_std) < 0.02
+
+def test_rmsnorm_node_runtime():
+    rms_def = global_registry.require("builtin.rmsnorm@1")
+    ctx = NodeValidationContext(model_config={"n_embd": 32})
+    r_spec = rms_def.build_runtime({"normalized_shape": 32}, ctx)
+    module = r_spec.factory()
+
+    assert not hasattr(module, "bias") or module.bias is None
+    x = torch.randn(2, 4, 32)
+    out = module(x)
+    assert out.shape == torch.Size([2, 4, 32])
+
+
+def test_rope_preserves_norm():
+    rope_def = global_registry.require("builtin.rope@1")
+    ctx = NodeValidationContext(model_config={"n_head": 4, "head_dim": 8})
+    r_spec = rope_def.build_runtime({"head_dim": 8, "n_head": 4}, ctx)
+    fn = r_spec.factory()
+
+    x = torch.randn(2, 6, 4, 8)
+    y = fn(x)
+    assert y.shape == x.shape
+    assert torch.allclose(x.norm(dim=-1), y.norm(dim=-1), rtol=1e-4)
+
+
+def test_swiglu_shape():
+    swiglu_def = global_registry.require("builtin.swiglu@1")
+    ctx = NodeValidationContext(model_config={"n_embd": 32})
+    r_spec = swiglu_def.build_runtime({"n_embd": 32}, ctx)
+    module = r_spec.factory()
+
+    x = torch.randn(2, 8, 32)
+    out = module(x)
+    assert out.shape == torch.Size([2, 8, 32])
+
+
+def test_gqa_shape():
+    gqa_def = global_registry.require("builtin.grouped_query_attention@1")
+    ctx = NodeValidationContext(model_config={"n_head": 4, "n_kv_head": 2, "dropout": 0.0})
+    r_spec = gqa_def.build_runtime({"n_head": 4, "n_kv_head": 2, "dropout": 0.0}, ctx)
+    fn = r_spec.factory()
+
+    q = torch.randn(2, 8, 32)
+    k = torch.randn(2, 8, 16)
+    v = torch.randn(2, 8, 16)
+    out = fn(q, k, v)
+    assert out.shape == torch.Size([2, 8, 32])
+
+
+@pytest.mark.asyncio
+async def test_llama_tiny_validates_and_runs():
+    from neural_blueprint.templates.llama import create_llama_tiny_template
+    from neural_blueprint.validation.validator import ProjectValidator
+    from neural_blueprint.runtime.inference import InferenceEngine
+
+    p = create_llama_tiny_template()
+    val = ProjectValidator().validate(p)
+    assert val.valid
+
+    engine = InferenceEngine(project=p)
+    res = await engine.infer()
+    assert res.get("tensor_count", 0) >= 1
+
+
+def test_comment_node_registration():
+    comment_node = global_registry.get("builtin.comment@1")
+    assert comment_node is not None
+    assert comment_node.type_id == "builtin.comment@1"
+    assert comment_node.category == "Debug"
+    assert len(comment_node.input_ports({})) == 0
+    assert len(comment_node.output_ports({})) == 0

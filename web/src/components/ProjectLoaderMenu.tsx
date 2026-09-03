@@ -25,6 +25,11 @@ const STARTER_TEMPLATES = [
     label: 'Two-Layer MLP',
     path: '/examples/arch_4_twolayer_mlp/arch_4_twolayer_mlp.nbp.json',
   },
+  {
+    id: 'llama',
+    label: 'Llama Tiny Architecture',
+    path: '/examples/arch_26_llama_tiny/arch_26_llama_tiny.nbp.json',
+  },
 ] as const;
 
 const menuPanelStyle: React.CSSProperties = {

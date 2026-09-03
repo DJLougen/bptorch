@@ -183,3 +183,101 @@ async def test_infer_route_returns_outputs(tiny_nanogpt_project):
         assert payload["outputs"]
     finally:
         global_session_manager.remove_session(session.session_id)
+
+def test_dataset_route_switch_tiny_shakespeare(tiny_nanogpt_project):
+    session = global_session_manager.create_training_session(
+        "dataset-test", tiny_nanogpt_project, device="cpu"
+    )
+    try:
+        client = TestClient(app)
+        response = client.post(
+            f"/api/v1/sessions/{session.session_id}/dataset",
+            json={"name": "tiny_shakespeare"},
+        )
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["status"] == "ok"
+        assert payload["name"] == "tiny_shakespeare"
+        assert payload["num_samples"] > 0
+    finally:
+        global_session_manager.remove_session(session.session_id)
+
+def test_list_checkpoints_route(tiny_nanogpt_project):
+    session = global_session_manager.create_training_session(
+        "list-ckpt-test", tiny_nanogpt_project, device="cpu"
+    )
+    try:
+        client = TestClient(app)
+        response = client.get(f"/api/v1/sessions/{session.session_id}/checkpoints")
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["status"] == "ok"
+        assert isinstance(payload["checkpoints"], list)
+    finally:
+        global_session_manager.remove_session(session.session_id)
+
+
+def test_upload_dataset_route(tiny_nanogpt_project):
+    session = global_session_manager.create_training_session(
+        "upload-data-test", tiny_nanogpt_project, device="cpu"
+    )
+    try:
+        client = TestClient(app)
+        response = client.post(
+            f"/api/v1/sessions/{session.session_id}/dataset/upload",
+            json={"text": "A quick brown fox jumps over the lazy dog repeatedly."},
+        )
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["status"] == "ok"
+        assert payload["num_samples"] > 0
+    finally:
+        global_session_manager.remove_session(session.session_id)
+
+
+def test_validate_session_route(tiny_nanogpt_project):
+    session = global_session_manager.create_training_session(
+        "validate-test", tiny_nanogpt_project, device="cpu"
+    )
+    try:
+        client = TestClient(app)
+        response = client.post(f"/api/v1/sessions/{session.session_id}/validate")
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["status"] == "ok"
+        assert isinstance(payload["val_loss"], float)
+        assert payload["val_samples"] > 0
+    finally:
+        global_session_manager.remove_session(session.session_id)
+
+def test_val_fraction_and_batch_size_hyperparameters(tiny_nanogpt_project):
+    session = global_session_manager.create_training_session(
+        "val-batch-test", tiny_nanogpt_project, device="cpu"
+    )
+    try:
+        client = TestClient(app)
+        resp = client.post(
+            f"/api/v1/sessions/{session.session_id}/dataset",
+            json={"name": "tiny_shakespeare", "val_fraction": 0.2},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "ok"
+
+        v_resp = client.post(f"/api/v1/sessions/{session.session_id}/validate")
+        assert v_resp.status_code == 200
+        assert isinstance(v_resp.json()["val_samples"], int)
+        assert v_resp.json()["val_samples"] > 0
+
+        h_resp = client.post(
+            f"/api/v1/sessions/{session.session_id}/hyperparameters",
+            json={"batch_size": 4},
+        )
+        assert h_resp.status_code == 200
+        assert h_resp.json()["status"] == "updated"
+        assert h_resp.json()["batch_size"] == 4
+
+        m_resp = client.get(f"/api/v1/sessions/{session.session_id}/metrics")
+        assert m_resp.status_code == 200
+        assert "parameter_norms" in m_resp.json()
+    finally:
+        global_session_manager.remove_session(session.session_id)

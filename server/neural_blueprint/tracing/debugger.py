@@ -69,6 +69,9 @@ class RuntimeSession:
         self._background_task = asyncio.create_task(coro)
         return self._background_task
 
+    def launch_background(self, coro) -> asyncio.Task:
+        return self._launch_background(coro)
+
     def set_breakpoint(self, node_id: str, enabled: bool) -> None:
         if enabled:
             self.breakpoints.add(node_id)
@@ -84,6 +87,8 @@ class RuntimeSession:
         outputs: Optional[Dict[str, TensorSummary]] = None,
         metrics: Optional[TrainingMetrics] = None,
         error: Optional[str] = None,
+        token: Optional[str] = None,
+        token_id: Optional[int] = None,
     ) -> TraceEvent:
         self.sequence_counter += 1
         evt = TraceEvent(
@@ -98,6 +103,8 @@ class RuntimeSession:
             outputs=outputs or {},
             metrics=metrics,
             error=error,
+            token=token,
+            token_id=token_id,
         )
         await self.event_queue.put(evt)
         return evt
@@ -325,7 +332,17 @@ class TrainingSession(RuntimeSession):
         torch.manual_seed(self.seed)
         init_nanogpt_weights(self.model, n_layer=cfg.get("n_layer", 2))
 
-        if self.has_token_in:
+        is_shakespeare = False
+        for g in project.model.graphs.values():
+            for n in g.nodes:
+                if n.definition_id == "builtin.dataset_source@1":
+                    if n.properties.get("synthetic") is False or n.properties.get("dataset_name") == "tiny_shakespeare":
+                        is_shakespeare = True
+                        break
+
+        if is_shakespeare:
+            self.load_dataset_by_name("tiny_shakespeare")
+        elif self.has_token_in:
             self.dataset_x = torch.randint(0, self.vocab_size, (num_samples, self.block_size))
             self.dataset_y = torch.randint(0, self.vocab_size, (num_samples, self.block_size))
             val_samples = 200
@@ -364,12 +381,14 @@ class TrainingSession(RuntimeSession):
         self.best_loss: Optional[float] = None
         self.metrics = TrainingMetrics()
         self.node_gradient_norms: Dict[str, float] = {}
+        self.parameter_norms: Dict[str, float] = {}
 
     def update_hyperparameters(
         self,
         learning_rate: Optional[float] = None,
         weight_decay: Optional[float] = None,
         grad_clip: Optional[float] = None,
+        batch_size: Optional[int] = None,
     ) -> None:
         if learning_rate is not None:
             self.learning_rate = learning_rate
@@ -381,7 +400,8 @@ class TrainingSession(RuntimeSession):
                 pg["weight_decay"] = weight_decay
         if grad_clip is not None:
             self.grad_clip = grad_clip
-
+        if batch_size is not None:
+            self.batch_size = max(1, int(batch_size))
     async def step_batch(self) -> Optional[TraceEvent]:
         if self.step >= self.max_steps:
             self.state = "completed"
@@ -645,6 +665,10 @@ class TrainingSession(RuntimeSession):
                 if param.grad is not None:
                     node_grad_norms[name] = float(param.grad.norm().item())
             self.node_gradient_norms = node_grad_norms
+            self.parameter_norms = {
+                name: float(p.data.norm().item())
+                for name, p in self.model.named_parameters()
+            }
 
             if math.isnan(total_norm_val) or math.isinf(total_norm_val) or total_norm_val > 100.0:
                 grad_status = "exploding"
@@ -725,18 +749,21 @@ class TrainingSession(RuntimeSession):
     async def run_training_loop(
         self, max_steps: Optional[int] = None, speed_delay: float = 0.0
     ) -> None:
-        target_steps = max_steps or self.max_steps
+        target_steps = (self.step + max_steps) if max_steps else self.max_steps
+        if target_steps > self.max_steps:
+            self.max_steps = target_steps
         self.state = "running"
         await self.emit_event(TraceEventType.TRAIN_STARTED, metrics=self.metrics)
 
         while self.state == "running" and self.step < target_steps:
             await self.step_batch()
-            if speed_delay > 0 and self.state == "running":
-                await asyncio.sleep(speed_delay)
+            delay = speed_delay if speed_delay > 0 else 0.02
+            if self.state == "running":
+                await asyncio.sleep(delay)
 
         if self.state == "running" and self.step >= target_steps:
             self.state = "completed"
-
+            await self.emit_event(TraceEventType.TRAIN_FINISHED, metrics=self.metrics)
     def pause(self) -> None:
         self.state = "paused"
 
@@ -744,10 +771,65 @@ class TrainingSession(RuntimeSession):
         self.state = "running"
         self._launch_background(self.run_training_loop(speed_delay=speed_delay))
 
+    def load_dataset_by_name(self, name: str, val_fraction: float = 0.1) -> int:
+        if name == "tiny_shakespeare":
+            from neural_blueprint.data.tiny_shakespeare import TINY_SHAKESPEARE, load_token_dataset
+            from neural_blueprint.runtime.tokenizer import CharacterTokenizer
+            tok = CharacterTokenizer(self.vocab_size)
+            split_idx = int(len(TINY_SHAKESPEARE) * (1.0 - val_fraction))
+            train_text = TINY_SHAKESPEARE[:split_idx]
+            val_text = TINY_SHAKESPEARE[split_idx:]
+            self.dataset_x, self.dataset_y = load_token_dataset(train_text, tok, self.block_size)
+            self.val_x, self.val_y = load_token_dataset(val_text, tok, self.block_size)
+        else:
+            in_features = int(self.project.model.config.get("in_features", self.project.model.config.get("in_dim", self.project.model.config.get("n_embd", 16))))
+            num_samples = 2000
+            val_samples = 200
+            if self.has_token_in:
+                self.dataset_x = torch.randint(0, self.vocab_size, (num_samples, self.block_size))
+                self.dataset_y = torch.randint(0, self.vocab_size, (num_samples, self.block_size))
+                self.val_x = torch.randint(0, self.vocab_size, (val_samples, self.block_size))
+                self.val_y = torch.randint(0, self.vocab_size, (val_samples, self.block_size))
+            else:
+                self.dataset_x = torch.randn(num_samples, in_features)
+                self.dataset_y = torch.randn(num_samples, in_features)
+                self.val_x = torch.randn(val_samples, in_features)
+                self.val_y = torch.randn(val_samples, in_features)
+        return len(self.dataset_x)
+
     def stop(self) -> None:
         self.state = "idle"
         if self._background_task and not self._background_task.done():
             self._background_task.cancel()
+
+    @torch.no_grad()
+    async def evaluate_validation(self) -> float:
+        self.model.eval()
+        try:
+            val_batch_size = min(len(self.val_x), max(1, self.batch_size * 2))
+            bx = self.val_x[:val_batch_size].to(self.device)
+            by = self.val_y[:val_batch_size].to(self.device)
+
+            input_name = "token_ids" if self.has_token_in else "input"
+            out = self.model(**{input_name: bx})
+            if isinstance(out, dict):
+                logits = out.get("logits", next(iter(out.values())))
+            elif isinstance(out, (list, tuple)):
+                logits = out[0]
+            else:
+                logits = out
+
+            if self.has_token_in and logits.dim() == 3:
+                val_loss = float(torch.nn.functional.cross_entropy(logits.view(-1, logits.size(-1)), by.view(-1)).item())
+            else:
+                val_loss = float(torch.nn.functional.mse_loss(logits, by).item())
+
+            if self.metrics:
+                self.metrics.val_loss = val_loss
+            await self.emit_event(TraceEventType.VALIDATION_FINISHED, metrics=self.metrics)
+            return val_loss
+        finally:
+            self.model.train()
 
     def save_checkpoint(self, path: Optional[str] = None) -> str:
         if path is None:

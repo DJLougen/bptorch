@@ -210,6 +210,13 @@ SAMPLE_METADATA: Dict[str, Dict[str, Any]] = {
         "tags": ["metrics", "logging", "dual-flow", "observability"],
         "difficulty": "advanced",
     },
+    "Arch 26: Llama Tiny": {
+        "category": "Transformers",
+        "description": "Modern Llama-style Transformer with RMSNorm, RoPE, SwiGLU, and Grouped Query Attention (GQA).",
+        "highlight": "State-of-the-art open-weights architecture blueprint with rotary embeddings and GQA.",
+        "tags": ["llama", "rmsnorm", "rope", "swiglu", "gqa"],
+        "difficulty": "advanced",
+    },
 }
 
 

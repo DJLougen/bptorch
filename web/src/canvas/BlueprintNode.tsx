@@ -10,6 +10,8 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Box,
+  ChevronDown,
+  ChevronRight,
   CircleDot,
   Columns,
   Combine,
@@ -90,8 +92,43 @@ export interface BlueprintNodeData {
   inputs: PortDefinition[];
   outputs: PortDefinition[];
   breakpoint?: boolean;
+  disabled?: boolean;
+  collapsed?: boolean;
 }
 
+export function compactPropertySummary(properties?: Record<string, unknown>): string | null {
+  if (!properties || typeof properties !== 'object') return null;
+
+  const keyMap: Array<{ key: string; label: string }> = [
+    { key: 'n_embd', label: 'C' },
+    { key: 'n_head', label: 'heads' },
+    { key: 'n_kv_head', label: 'kv' },
+    { key: 'attention_implementation', label: 'attention_implementation' },
+    { key: 'in_features', label: 'in_features' },
+    { key: 'out_features', label: 'out_features' },
+    { key: 'hidden_dim', label: 'hidden_dim' },
+    { key: 'dropout', label: 'dropout' },
+  ];
+
+  const parts: string[] = [];
+  for (const { key, label } of keyMap) {
+    if (key in properties) {
+      const val = properties[key];
+      if (val === undefined || val === null || val === '') continue;
+      let displayVal: string;
+      if (val && typeof val === 'object' && 'kind' in val && val.kind === 'config_ref' && 'key' in val) {
+        displayVal = String(val.key ?? '');
+      } else {
+        displayVal = String(val);
+      }
+      if (!displayVal) continue;
+      parts.push(`${label}: ${displayVal}`);
+      if (parts.length === 3) break;
+    }
+  }
+
+  return parts.length > 0 ? parts.join(' | ') : null;
+}
 const CATEGORY_COLORS: Record<string, { bg: string; border: string; badge: string }> = {
   'Flow Control': { bg: '#14532d', border: '#22c55e', badge: '#16a34a' },
   Events: { bg: '#701a75', border: '#d946ef', badge: '#c026d3' },
@@ -122,9 +159,10 @@ function getPortHandleStyle(port: PortDefinition, isOutput: boolean): React.CSSP
       width: 10,
       height: 10,
       borderRadius: 2,
-      transform: 'rotate(45deg)',
-      left: isOutput ? undefined : -15,
-      right: isOutput ? -15 : undefined,
+      transform: 'translateY(-50%) rotate(45deg)',
+      left: isOutput ? undefined : -16,
+      right: isOutput ? -16 : undefined,
+      top: '50%',
       border: '2px solid #0f172a',
       zIndex: 10,
     };
@@ -145,22 +183,39 @@ function getPortHandleStyle(port: PortDefinition, isOutput: boolean): React.CSSP
     width: 10,
     height: 10,
     borderRadius: '50%',
-    left: isOutput ? undefined : -15,
-    right: isOutput ? -15 : undefined,
+    transform: 'translateY(-50%)',
+    left: isOutput ? undefined : -16,
+    right: isOutput ? -16 : undefined,
+    top: '50%',
     border: '2px solid #0f172a',
     zIndex: 10,
   };
 }
 
 export const BlueprintNode = memo(({ data, selected }: { data: BlueprintNodeData; selected?: boolean }) => {
-  const { openGraph, setNodeBreakpoint } = useProjectStore();
-  const { selectedNodeId, selectNode } = useUIStore();
+  const { openGraph, setNodeBreakpoint, toggleNodeCollapsed } = useProjectStore();
+  const { selectedNodeId, selectedNodeIds, selectNode, repeatInstanceIndex } = useUIStore();
   const { resolvedShapes, diagnostics } = useValidationStore();
-  const { nodeStates, nodeGradientNorms } = useTraceStore();
+  const { nodeStates, nodeGradientNorms, parameterNorms } = useTraceStore();
 
-  const isSelected = selected || selectedNodeId === data.id;
-  const executionState = nodeStates[data.id] || 'pending';
+  const isSelected =
+    Boolean(selected) ||
+    selectedNodeId === data.id ||
+    (Array.isArray(selectedNodeIds) && selectedNodeIds.includes(data.id));
 
+  let executionState = nodeStates[data.id] || 'pending';
+  if (typeof repeatInstanceIndex === 'number') {
+    const keys = Object.keys(nodeStates);
+    const hasIndexedKey = keys.some((k) => k.includes('[') && (k.includes(data.id) || k.endsWith(`/${data.id}`)));
+    if (hasIndexedKey) {
+      const match = keys.find(
+        (k) => (k.includes(data.id) || k.endsWith(`/${data.id}`)) && k.includes(`[${repeatInstanceIndex}]`)
+      );
+      if (match && nodeStates[match]) {
+        executionState = nodeStates[match];
+      }
+    }
+  }
   const categoryColor = CATEGORY_COLORS[data.category] || {
     bg: '#1e293b',
     border: '#64748b',
@@ -198,11 +253,45 @@ export const BlueprintNode = memo(({ data, selected }: { data: BlueprintNodeData
   };
 
   const gNorm = nodeGradientNorms[data.id] ?? nodeGradientNorms[`${data.id}.weight`];
+  const pNorm = parameterNorms?.[data.id] ?? parameterNorms?.[`${data.id}.weight`];
   let gradStatusColor: string | null = null;
   if (gNorm !== undefined) {
     if (gNorm > 10.0) gradStatusColor = '#ef4444';
     else if (gNorm < 1e-4) gradStatusColor = '#3b82f6';
     else gradStatusColor = '#22c55e';
+  }
+
+  if (data.definitionId === 'builtin.comment@1') {
+    return (
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+          selectNode(data.id);
+        }}
+        style={{
+          minWidth: 180,
+          background: '#3f3a1d',
+          border: '1px solid #a16207',
+          borderRadius: 8,
+          boxShadow: isSelected
+            ? '0 0 16px rgba(245, 158, 11, 0.4)'
+            : '0 4px 12px rgba(0, 0, 0, 0.5)',
+          color: '#fef08a',
+          fontSize: 12,
+          padding: '8px 12px',
+          opacity: data.disabled ? 0.45 : 1,
+          cursor: 'pointer',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, marginBottom: 4, color: '#fde047' }}>
+          <IconComponent size={14} />
+          <span>{data.displayName}</span>
+        </div>
+        <div style={{ fontSize: 11, color: '#fef9c3', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+          {String(data.properties.text ?? '')}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -212,7 +301,8 @@ export const BlueprintNode = memo(({ data, selected }: { data: BlueprintNodeData
         selectNode(data.id);
       }}
       style={{
-        minWidth: 200,
+        minWidth: 220,
+        position: 'relative',
         background: '#13151b',
         borderRadius: 8,
         border: `2px solid ${borderColor}`,
@@ -223,14 +313,17 @@ export const BlueprintNode = memo(({ data, selected }: { data: BlueprintNodeData
             : '0 4px 12px rgba(0, 0, 0, 0.5)',
         color: '#f1f5f9',
         fontSize: 12,
-        overflow: 'hidden',
+        overflow: 'visible',
         transition: 'all 0.15s ease',
+        opacity: data.disabled ? 0.45 : 1,
       }}
     >
       <div
         style={{
           background: categoryColor.bg,
           padding: '6px 10px',
+          borderTopLeftRadius: 6,
+          borderTopRightRadius: 6,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -241,10 +334,41 @@ export const BlueprintNode = memo(({ data, selected }: { data: BlueprintNodeData
           <IconComponent size={14} className="text-white opacity-90" />
           <span style={{ fontWeight: 600, fontSize: 12, letterSpacing: '0.02em' }}>
             {data.displayName}
+            {data.definitionId.startsWith('custom.') && !data.displayName.endsWith('*') && (
+              <span title="Custom module" style={{ color: '#fbbf24', marginLeft: 2 }}>*</span>
+            )}
           </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {data.disabled && (
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                background: '#ef4444',
+                color: '#fff',
+                padding: '1px 5px',
+                borderRadius: 4,
+                letterSpacing: '0.04em',
+              }}
+            >
+              Disabled
+            </span>
+          )}
+          {pNorm !== undefined && (
+            <span
+              title={`Param L2: ${pNorm.toFixed(4)}`}
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: '#f59e0b',
+                display: 'inline-block',
+                boxShadow: '0 0 6px #f59e0b',
+              }}
+            />
+          )}
           {gradStatusColor && (
             <span
               title={`Grad Norm: ${gNorm?.toFixed(4)}`}
@@ -258,6 +382,25 @@ export const BlueprintNode = memo(({ data, selected }: { data: BlueprintNodeData
               }}
             />
           )}
+          <button
+            aria-label={data.collapsed ? 'Expand node' : 'Collapse node'}
+            title={data.collapsed ? 'Expand node' : 'Collapse node'}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleNodeCollapsed(data.id);
+            }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 2,
+              display: 'flex',
+              alignItems: 'center',
+              color: '#94a3b8',
+            }}
+          >
+            {data.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+          </button>
 
           <button
             title={data.breakpoint ? 'Disable Breakpoint' : 'Set Breakpoint'}
@@ -284,88 +427,151 @@ export const BlueprintNode = memo(({ data, selected }: { data: BlueprintNodeData
           </button>
         </div>
       </div>
+      {!data.collapsed && compactPropertySummary(data.properties) && (
+        <div
+          style={{
+            fontSize: 10,
+            color: '#94a3b8',
+            padding: '4px 10px 0',
+          }}
+        >
+          {compactPropertySummary(data.properties)}
+        </div>
+      )}
+      <div style={{ padding: data.collapsed ? '2px 10px' : '8px 10px', display: 'flex', flexDirection: 'column', gap: data.collapsed ? 0 : 6 }}>
+        {(() => {
+          const rowCount = Math.max(data.inputs.length, data.outputs.length);
+          if (rowCount === 0) return null;
+          return Array.from({ length: rowCount }).map((_, idx) => {
+            const inPort = data.inputs[idx] || null;
+            const outPort = data.outputs[idx] || null;
 
-      <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {data.inputs.map((port) => (
-          <div
-            key={port.id}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              position: 'relative',
-              paddingLeft: 4,
-              minHeight: 18,
-            }}
-          >
-            <BlueprintPortHandle
-              nodeId={data.id}
-              port={port}
-              isOutput={false}
-              baseStyle={getPortHandleStyle(port, false)}
-            />
-            <span
-              style={{
-                color: port.kind === 'exec' ? '#ffffff' : '#94a3b8',
-                fontSize: 11,
-                fontWeight: port.kind === 'exec' ? 600 : 400,
-              }}
-            >
-              {port.display_name}
-            </span>
-          </div>
-        ))}
-
-        {data.outputs.map((port) => {
-          const spec = resolvedShapes[data.id]?.[port.id];
-          const shapeStr = getShapeString(spec);
-
-          return (
-            <div
-              key={port.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                position: 'relative',
-                paddingRight: 4,
-                minHeight: 18,
-              }}
-            >
-              <span
+            return (
+              <div
+                key={idx}
                 style={{
-                  color: port.kind === 'exec' ? '#ffffff' : '#e2e8f0',
-                  fontSize: 11,
-                  fontWeight: port.kind === 'exec' ? 600 : 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  minHeight: data.collapsed ? 4 : 20,
+                  height: data.collapsed ? 4 : undefined,
+                  position: 'relative',
+                  gap: 16,
                 }}
               >
-                {port.display_name}
-              </span>
-              {shapeStr && (
-                <span
-                  style={{
-                    fontSize: 10,
-                    color: '#67e8f9',
-                    background: '#164e63',
-                    padding: '1px 5px',
-                    borderRadius: 3,
-                    marginLeft: 8,
-                    fontFamily: 'monospace',
-                  }}
-                >
-                  {shapeStr}
-                </span>
-              )}
-              <BlueprintPortHandle
-                nodeId={data.id}
-                port={port}
-                isOutput
-                baseStyle={getPortHandleStyle(port, true)}
-              />
-            </div>
-          );
-        })}
+                {/* Left Side: Input Pin & Name */}
+                {inPort ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      position: 'relative',
+                      paddingLeft: 2,
+                    }}
+                  >
+                    <BlueprintPortHandle
+                      nodeId={data.id}
+                      port={inPort}
+                      isOutput={false}
+                      baseStyle={getPortHandleStyle(inPort, false)}
+                    />
+                    {!data.collapsed && (
+                      <>
+                        {(() => {
+                          const spec = resolvedShapes[data.id]?.[inPort.id];
+                          const shapeStr = getShapeString(spec);
+                          return shapeStr ? (
+                            <span
+                              style={{
+                                fontSize: 10,
+                                color: '#67e8f9',
+                                background: '#164e63',
+                                padding: '1px 5px',
+                                borderRadius: 3,
+                                fontFamily: 'monospace',
+                                marginRight: 8,
+                              }}
+                            >
+                              {shapeStr}
+                            </span>
+                          ) : null;
+                        })()}
+                        <span
+                          style={{
+                            color: inPort.kind === 'exec' ? '#ffffff' : '#94a3b8',
+                            fontSize: 11,
+                            fontWeight: inPort.kind === 'exec' ? 600 : 400,
+                          }}
+                        >
+                          {inPort.display_name}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ flex: 1 }} />
+                )}
 
-        {hasError && (
+                {/* Right Side: Output Name, Shape & Pin */}
+                {outPort ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      position: 'relative',
+                      paddingRight: 2,
+                      marginLeft: 'auto',
+                      justifyContent: 'flex-end',
+                    }}
+                  >
+                    {!data.collapsed && (
+                      <>
+                        <span
+                          style={{
+                            color: outPort.kind === 'exec' ? '#ffffff' : '#e2e8f0',
+                            fontSize: 11,
+                            fontWeight: outPort.kind === 'exec' ? 600 : 500,
+                          }}
+                        >
+                          {outPort.display_name}
+                        </span>
+                        {(() => {
+                          const spec = resolvedShapes[data.id]?.[outPort.id];
+                          const shapeStr = getShapeString(spec);
+                          return shapeStr ? (
+                            <span
+                              style={{
+                                fontSize: 10,
+                                color: '#67e8f9',
+                                background: '#164e63',
+                                padding: '1px 5px',
+                                borderRadius: 3,
+                                fontFamily: 'monospace',
+                              }}
+                            >
+                              {shapeStr}
+                            </span>
+                          ) : null;
+                        })()}
+                      </>
+                    )}
+                    <BlueprintPortHandle
+                      nodeId={data.id}
+                      port={outPort}
+                      isOutput={true}
+                      baseStyle={getPortHandleStyle(outPort, true)}
+                    />
+                  </div>
+                ) : (
+                  <div style={{ flex: 1 }} />
+                )}
+              </div>
+            );
+          });
+        })()}
+        {!data.collapsed && hasError && (
           <div
             style={{
               fontSize: 10,
@@ -381,7 +587,7 @@ export const BlueprintNode = memo(({ data, selected }: { data: BlueprintNodeData
           </div>
         )}
 
-        {data.isComposite && (
+        {!data.collapsed && data.isComposite && (
           <button
             onClick={(e) => {
               e.stopPropagation();

@@ -121,3 +121,49 @@ def test_weight_tying_mismatch_on_nested_nanogpt_binding_emits_error():
     assert result.valid is False
     assert E_WEIGHT_TYING_MISMATCH in [d.code for d in result.errors]
 
+
+
+def test_custom_forked_composite_validation_and_compilation():
+    from fastapi.testclient import TestClient
+    from neural_blueprint.api.main import app
+    from neural_blueprint.templates.nanogpt import create_nanogpt_template
+
+    project = create_nanogpt_template(
+        block_size=8,
+        vocab_size=32,
+        n_layer=2,
+        n_head=2,
+        n_embd=16,
+    )
+    block_graph = project.model.graphs["graph_block"]
+    mlp_node = next(n for n in block_graph.nodes if "mlp" in n.definition_id)
+    orig_definition_id = mlp_node.definition_id
+
+    # Fork graph_mlp into custom.graph_custom_mlp_42
+    orig_graph = project.model.graphs["graph_mlp"]
+    new_graph_id = "graph_custom_mlp_42"
+    custom_graph = orig_graph.model_copy(deep=True)
+    custom_graph.id = new_graph_id
+    custom_graph.name = "Custom MLP"
+    custom_graph.derived_from = orig_definition_id
+    custom_graph.modified = True
+
+    project.model.graphs[new_graph_id] = custom_graph
+    mlp_node.definition_id = f"custom.{new_graph_id}"
+
+    # 1. ProjectValidator asserts valid
+    validator = ProjectValidator()
+    result = validator.validate(project)
+    assert result.valid is True, f"Validation failed with errors: {[d.message for d in result.errors]}"
+    assert len(result.errors) == 0
+
+    # 2. POST /api/v1/models/compile returns 200 OK
+    client = TestClient(app)
+    resp = client.post(
+        "/api/v1/models/compile",
+        json={"project": project.model_dump(mode="json"), "mode": "training"},
+    )
+    assert resp.status_code == 200, f"Compile failed: {resp.text}"
+    payload = resp.json()
+    assert "session_id" in payload
+    assert "graph_hash" in payload

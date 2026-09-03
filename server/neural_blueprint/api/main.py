@@ -13,7 +13,7 @@ from neural_blueprint.api.routes.samples import router as samples_router
 from neural_blueprint.api.routes.sessions import router as sessions_router
 from neural_blueprint.api.routes.sessions import ws_router
 from neural_blueprint.api.routes.tester import router as tester_router
-
+from neural_blueprint.api.routes.importer import router as importer_router
 
 class HealthResponse(BaseModel):
     status: str
@@ -58,6 +58,7 @@ def create_app() -> FastAPI:
     app.include_router(tester_router)
     app.include_router(ws_router)
     app.include_router(samples_router)
+    app.include_router(importer_router)
 
     @app.get("/api/v1/health", response_model=HealthResponse)
     async def health():

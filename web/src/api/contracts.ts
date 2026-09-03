@@ -120,6 +120,8 @@ export interface GraphDefinition {
   edges: Edge[];
   repeat_count?: number | ConfigRefValue | null;
   target_graph_id?: string | null;
+  derived_from?: string | null;
+  modified?: boolean;
 }
 export interface WeightBindingEndpoint {
   node_id: string;
@@ -171,6 +173,8 @@ export interface UIState {
   graph_viewports: Record<string, Viewport>;
   node_positions: Record<string, Record<string, NodePosition>>;
   open_graph_id: string;
+  collapsed_node_ids?: Record<string, string[]>;
+  edge_waypoints?: Record<string, Record<string, NodePosition[]>>;
 }
 
 export interface ProjectMetadata {
@@ -283,7 +287,9 @@ export type TraceEventType =
   | 'checkpoint_saved'
   | 'anomaly_detected'
   | 'train_finished'
-  | 'hyperparameter_updated';
+  | 'hyperparameter_updated'
+  | 'token_generated'
+  | 'generation_finished';
 
 export interface TraceEvent {
   sequence: number;
@@ -297,6 +303,8 @@ export interface TraceEvent {
   inputs?: Record<string, TensorSummary>;
   metrics?: TrainingMetrics | null;
   error?: string | null;
+  token?: string | null;
+  token_id?: number | null;
 }
 
 export interface TestCaseResult {

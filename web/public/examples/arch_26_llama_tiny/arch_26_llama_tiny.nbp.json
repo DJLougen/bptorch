@@ -1,0 +1,1108 @@
+{
+  "schema_version": 1,
+  "project": {
+    "id": "arch_26_llama_tiny",
+    "name": "Arch 26: Llama Tiny",
+    "created_at": "2026-09-02T00:00:00Z",
+    "updated_at": "2026-09-02T00:00:00Z"
+  },
+  "model": {
+    "root_graph_id": "graph_llama",
+    "config": {
+      "block_size": 32,
+      "vocab_size": 64,
+      "n_layer": 2,
+      "n_head": 4,
+      "n_kv_head": 2,
+      "n_embd": 32,
+      "dropout": 0.0
+    },
+    "training": {
+      "device": "cpu",
+      "precision": "fp32",
+      "ddp_enabled": false,
+      "seed": 1337,
+      "max_epochs": 10,
+      "max_steps": 40,
+      "learning_rate": 0.0006,
+      "weight_decay": 0.1,
+      "grad_accum_steps": 1,
+      "grad_clip": 1.0,
+      "batch_size": 8,
+      "checkpoint_interval": 100,
+      "eval_interval": 50
+    },
+    "graphs": {
+      "graph_llama_input_embeddings": {
+        "id": "graph_llama_input_embeddings",
+        "name": "Llama Input Embeddings",
+        "kind": "module",
+        "interface": {
+          "inputs": [
+            {
+              "id": "tokens",
+              "display_name": "Tokens",
+              "direction": "input",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ],
+          "outputs": [
+            {
+              "id": "output",
+              "display_name": "Embeddings",
+              "direction": "output",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ]
+        },
+        "variables": [],
+        "nodes": [
+          {
+            "id": "node_in_tokens",
+            "definition_id": "builtin.module_input@1",
+            "display_name": "Tokens Input",
+            "properties": {
+              "name": "tokens"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_tok_emb",
+            "definition_id": "builtin.embedding@1",
+            "display_name": "Token Embedding (wte)",
+            "properties": {
+              "num_embeddings": {
+                "kind": "config_ref",
+                "key": "vocab_size"
+              },
+              "embedding_dim": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_out_emb",
+            "definition_id": "builtin.module_output@1",
+            "display_name": "Embeddings Output",
+            "properties": {
+              "name": "output"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e_in_to_tok",
+            "source": {
+              "node_id": "node_in_tokens",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_tok_emb",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_tok_to_out",
+            "source": {
+              "node_id": "node_tok_emb",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_out_emb",
+              "port_id": "input"
+            }
+          }
+        ],
+        "repeat_count": null,
+        "target_graph_id": null,
+        "derived_from": null,
+        "modified": false
+      },
+      "graph_llama_attention": {
+        "id": "graph_llama_attention",
+        "name": "Llama Attention (GQA + RoPE)",
+        "kind": "module",
+        "interface": {
+          "inputs": [
+            {
+              "id": "input",
+              "display_name": "Input",
+              "direction": "input",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ],
+          "outputs": [
+            {
+              "id": "output",
+              "display_name": "Output",
+              "direction": "output",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ]
+        },
+        "variables": [],
+        "nodes": [
+          {
+            "id": "node_attn_in",
+            "definition_id": "builtin.module_input@1",
+            "display_name": "Attention Input",
+            "properties": {
+              "name": "input"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_q_proj",
+            "definition_id": "builtin.linear@1",
+            "display_name": "Q Projection",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "bias": false
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_k_proj",
+            "definition_id": "builtin.linear@1",
+            "display_name": "K Projection",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "bias": false
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_v_proj",
+            "definition_id": "builtin.linear@1",
+            "display_name": "V Projection",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "bias": false
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_q_rope",
+            "definition_id": "builtin.rope@1",
+            "display_name": "RoPE on Q",
+            "properties": {
+              "head_dim": 8,
+              "n_head": {
+                "kind": "config_ref",
+                "key": "n_head"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_k_rope",
+            "definition_id": "builtin.rope@1",
+            "display_name": "RoPE on K",
+            "properties": {
+              "head_dim": 8,
+              "n_head": {
+                "kind": "config_ref",
+                "key": "n_head"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_gqa",
+            "definition_id": "builtin.grouped_query_attention@1",
+            "display_name": "Grouped Query Attention",
+            "properties": {
+              "n_head": {
+                "kind": "config_ref",
+                "key": "n_head"
+              },
+              "n_kv_head": {
+                "kind": "config_ref",
+                "key": "n_kv_head"
+              },
+              "dropout": {
+                "kind": "config_ref",
+                "key": "dropout"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_out_proj",
+            "definition_id": "builtin.linear@1",
+            "display_name": "Output Projection",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "bias": false
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_attn_out",
+            "definition_id": "builtin.module_output@1",
+            "display_name": "Attention Output",
+            "properties": {
+              "name": "output"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e_in_to_q",
+            "source": {
+              "node_id": "node_attn_in",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_q_proj",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_in_to_k",
+            "source": {
+              "node_id": "node_attn_in",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_k_proj",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_in_to_v",
+            "source": {
+              "node_id": "node_attn_in",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_v_proj",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_q_to_rope",
+            "source": {
+              "node_id": "node_q_proj",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_q_rope",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_k_to_rope",
+            "source": {
+              "node_id": "node_k_proj",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_k_rope",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_rope_q_to_gqa",
+            "source": {
+              "node_id": "node_q_rope",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_gqa",
+              "port_id": "q"
+            }
+          },
+          {
+            "id": "e_rope_k_to_gqa",
+            "source": {
+              "node_id": "node_k_rope",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_gqa",
+              "port_id": "k"
+            }
+          },
+          {
+            "id": "e_v_to_gqa",
+            "source": {
+              "node_id": "node_v_proj",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_gqa",
+              "port_id": "v"
+            }
+          },
+          {
+            "id": "e_gqa_to_out_proj",
+            "source": {
+              "node_id": "node_gqa",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_out_proj",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_out_proj_to_attn_out",
+            "source": {
+              "node_id": "node_out_proj",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_attn_out",
+              "port_id": "input"
+            }
+          }
+        ],
+        "repeat_count": null,
+        "target_graph_id": null,
+        "derived_from": null,
+        "modified": false
+      },
+      "graph_llama_mlp": {
+        "id": "graph_llama_mlp",
+        "name": "Llama SwiGLU MLP",
+        "kind": "module",
+        "interface": {
+          "inputs": [
+            {
+              "id": "input",
+              "display_name": "Input",
+              "direction": "input",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ],
+          "outputs": [
+            {
+              "id": "output",
+              "display_name": "Output",
+              "direction": "output",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ]
+        },
+        "variables": [],
+        "nodes": [
+          {
+            "id": "node_mlp_in",
+            "definition_id": "builtin.module_input@1",
+            "display_name": "MLP Input",
+            "properties": {
+              "name": "input"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_swiglu",
+            "definition_id": "builtin.swiglu@1",
+            "display_name": "SwiGLU",
+            "properties": {
+              "n_embd": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_mlp_out",
+            "definition_id": "builtin.module_output@1",
+            "display_name": "MLP Output",
+            "properties": {
+              "name": "output"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e_mlp_in_to_swiglu",
+            "source": {
+              "node_id": "node_mlp_in",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_swiglu",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_swiglu_to_out",
+            "source": {
+              "node_id": "node_swiglu",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_mlp_out",
+              "port_id": "input"
+            }
+          }
+        ],
+        "repeat_count": null,
+        "target_graph_id": null,
+        "derived_from": null,
+        "modified": false
+      },
+      "graph_llama_block": {
+        "id": "graph_llama_block",
+        "name": "Llama Transformer Block",
+        "kind": "module",
+        "interface": {
+          "inputs": [
+            {
+              "id": "input",
+              "display_name": "Input",
+              "direction": "input",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ],
+          "outputs": [
+            {
+              "id": "output",
+              "display_name": "Output",
+              "direction": "output",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ]
+        },
+        "variables": [],
+        "nodes": [
+          {
+            "id": "node_blk_in",
+            "definition_id": "builtin.module_input@1",
+            "display_name": "Block Input",
+            "properties": {
+              "name": "input"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_rms_1",
+            "definition_id": "builtin.rmsnorm@1",
+            "display_name": "RMSNorm 1",
+            "properties": {
+              "normalized_shape": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_attn_subgraph",
+            "definition_id": "builtin.llama_attention@1",
+            "display_name": "Llama Attention",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_resid_add_1",
+            "definition_id": "builtin.add@1",
+            "display_name": "Residual Add 1",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_rms_2",
+            "definition_id": "builtin.rmsnorm@1",
+            "display_name": "RMSNorm 2",
+            "properties": {
+              "normalized_shape": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_mlp_subgraph",
+            "definition_id": "builtin.llama_mlp@1",
+            "display_name": "Llama SwiGLU MLP",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_resid_add_2",
+            "definition_id": "builtin.add@1",
+            "display_name": "Residual Add 2",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_blk_out",
+            "definition_id": "builtin.module_output@1",
+            "display_name": "Block Output",
+            "properties": {
+              "name": "output"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e_blk_in_to_rms1",
+            "source": {
+              "node_id": "node_blk_in",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_rms_1",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_rms1_to_attn",
+            "source": {
+              "node_id": "node_rms_1",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_attn_subgraph",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_blk_in_to_add1",
+            "source": {
+              "node_id": "node_blk_in",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_resid_add_1",
+              "port_id": "a"
+            }
+          },
+          {
+            "id": "e_attn_to_add1",
+            "source": {
+              "node_id": "node_attn_subgraph",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_resid_add_1",
+              "port_id": "b"
+            }
+          },
+          {
+            "id": "e_add1_to_rms2",
+            "source": {
+              "node_id": "node_resid_add_1",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_rms_2",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_rms2_to_mlp",
+            "source": {
+              "node_id": "node_rms_2",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_mlp_subgraph",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_add1_to_add2",
+            "source": {
+              "node_id": "node_resid_add_1",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_resid_add_2",
+              "port_id": "a"
+            }
+          },
+          {
+            "id": "e_mlp_to_add2",
+            "source": {
+              "node_id": "node_mlp_subgraph",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_resid_add_2",
+              "port_id": "b"
+            }
+          },
+          {
+            "id": "e_add2_to_blk_out",
+            "source": {
+              "node_id": "node_resid_add_2",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_blk_out",
+              "port_id": "input"
+            }
+          }
+        ],
+        "repeat_count": null,
+        "target_graph_id": null,
+        "derived_from": null,
+        "modified": false
+      },
+      "graph_llama_stack": {
+        "id": "graph_llama_stack",
+        "name": "Llama Transformer Stack",
+        "kind": "repeat",
+        "interface": {
+          "inputs": [
+            {
+              "id": "input",
+              "display_name": "Input",
+              "direction": "input",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ],
+          "outputs": [
+            {
+              "id": "output",
+              "display_name": "Output",
+              "direction": "output",
+              "kind": "data",
+              "required": true,
+              "multiplicity": "single",
+              "tensor_type": null,
+              "default_shape": null,
+              "description": null
+            }
+          ]
+        },
+        "variables": [],
+        "nodes": [],
+        "edges": [],
+        "repeat_count": {
+          "kind": "config_ref",
+          "key": "n_layer"
+        },
+        "target_graph_id": "graph_llama_block",
+        "derived_from": null,
+        "modified": false
+      },
+      "graph_llama": {
+        "id": "graph_llama",
+        "name": "Llama Tiny",
+        "kind": "root",
+        "interface": {
+          "inputs": [],
+          "outputs": []
+        },
+        "variables": [],
+        "nodes": [
+          {
+            "id": "node_token_ids",
+            "definition_id": "builtin.token_input@1",
+            "display_name": "Token IDs Input [B, T]",
+            "properties": {
+              "name": "token_ids"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_input_embeddings",
+            "definition_id": "builtin.llama_input_embeddings@1",
+            "display_name": "Llama Input Embeddings",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_transformer_stack",
+            "definition_id": "builtin.llama_stack@1",
+            "display_name": "Llama Stack (h)",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_rms_f",
+            "definition_id": "builtin.rmsnorm@1",
+            "display_name": "Final RMSNorm (rms_f)",
+            "properties": {
+              "normalized_shape": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              }
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_lm_head",
+            "definition_id": "builtin.lm_head@1",
+            "display_name": "LM Head (tied)",
+            "properties": {
+              "in_features": {
+                "kind": "config_ref",
+                "key": "n_embd"
+              },
+              "out_features": {
+                "kind": "config_ref",
+                "key": "vocab_size"
+              },
+              "bias": false
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_logits_out",
+            "definition_id": "builtin.logits_output@1",
+            "display_name": "Logits Output",
+            "properties": {
+              "name": "logits"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_targets",
+            "definition_id": "builtin.target_input@1",
+            "display_name": "Target IDs [B, T]",
+            "properties": {
+              "name": "targets"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_loss",
+            "definition_id": "builtin.cross_entropy_loss@1",
+            "display_name": "CrossEntropy Loss",
+            "properties": {},
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          },
+          {
+            "id": "node_loss_out",
+            "definition_id": "builtin.loss_output@1",
+            "display_name": "Loss Output",
+            "properties": {
+              "name": "loss"
+            },
+            "metadata": {
+              "breakpoint": false,
+              "disabled": false,
+              "notes": null
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e_tok_to_emb",
+            "source": {
+              "node_id": "node_token_ids",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_input_embeddings",
+              "port_id": "tokens"
+            }
+          },
+          {
+            "id": "e_emb_to_stack",
+            "source": {
+              "node_id": "node_input_embeddings",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_transformer_stack",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_stack_to_rmsf",
+            "source": {
+              "node_id": "node_transformer_stack",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_rms_f",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_rmsf_to_head",
+            "source": {
+              "node_id": "node_rms_f",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_lm_head",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_head_to_logits",
+            "source": {
+              "node_id": "node_lm_head",
+              "port_id": "logits"
+            },
+            "target": {
+              "node_id": "node_logits_out",
+              "port_id": "input"
+            }
+          },
+          {
+            "id": "e_logits_to_loss",
+            "source": {
+              "node_id": "node_lm_head",
+              "port_id": "logits"
+            },
+            "target": {
+              "node_id": "node_loss",
+              "port_id": "logits"
+            }
+          },
+          {
+            "id": "e_targets_to_loss",
+            "source": {
+              "node_id": "node_targets",
+              "port_id": "output"
+            },
+            "target": {
+              "node_id": "node_loss",
+              "port_id": "targets"
+            }
+          },
+          {
+            "id": "e_loss_to_out",
+            "source": {
+              "node_id": "node_loss",
+              "port_id": "loss"
+            },
+            "target": {
+              "node_id": "node_loss_out",
+              "port_id": "input"
+            }
+          }
+        ],
+        "repeat_count": null,
+        "target_graph_id": null,
+        "derived_from": null,
+        "modified": false
+      }
+    },
+    "weight_bindings": [
+      {
+        "source": {
+          "node_id": "node_tok_emb",
+          "parameter": "weight"
+        },
+        "target": {
+          "node_id": "node_lm_head",
+          "parameter": "weight"
+        },
+        "mode": "share"
+      }
+    ]
+  },
+  "ui": {
+    "graph_viewports": {},
+    "node_positions": {},
+    "open_graph_id": "graph_llama",
+    "collapsed_node_ids": {},
+    "edge_waypoints": {}
+  }
+}

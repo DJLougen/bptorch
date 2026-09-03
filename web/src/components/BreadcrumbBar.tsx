@@ -11,9 +11,74 @@ import {
   Flame,
   Layers,
 } from 'lucide-react';
+import { Project } from '../api/contracts';
 import { useProjectStore } from '../stores/projectStore';
 import { useUIStore } from '../stores/uiStore';
 
+export const COMPOSITE_TYPE_MAP: Record<string, string> = {
+  'builtin.nanogpt_input_embeddings@1': 'graph_input_embeddings',
+  'builtin.nanogpt_attention@1': 'graph_attention',
+  'builtin.nanogpt_mlp@1': 'graph_mlp',
+  'builtin.nanogpt_block@1': 'graph_block',
+  'builtin.llama_input_embeddings@1': 'graph_llama_input_embeddings',
+  'builtin.nanogpt_stack@1': 'graph_stack',
+  'builtin.llama_attention@1': 'graph_llama_attention',
+  'builtin.llama_mlp@1': 'graph_llama_mlp',
+  'builtin.llama_block@1': 'graph_llama_block',
+  'builtin.llama_stack@1': 'graph_llama_stack',
+};
+
+export function buildBreadcrumb(
+  project: Project | null | undefined,
+  openGraphId: string
+): Array<{ id: string; name: string }> {
+  if (!project?.model?.graphs) {
+    return [{ id: openGraphId, name: openGraphId }];
+  }
+
+  const rootGraphId = project.model.root_graph_id || 'graph_gpt';
+  const rootName = project.model.graphs[rootGraphId]?.name || 'nanoGPT';
+
+  // Parent map: for every graph G, every node N: if COMPOSITE_TYPE_MAP[N.definition_id] equals graph H, parent[H]=G.id
+  const parentMap: Record<string, string> = {};
+  for (const [gId, g] of Object.entries(project.model.graphs)) {
+    if (g.kind === 'repeat' && g.target_graph_id) {
+      parentMap[g.target_graph_id] = gId;
+    }
+    for (const node of g.nodes || []) {
+      const compTarget = COMPOSITE_TYPE_MAP[node.definition_id];
+      if (compTarget && project.model.graphs[compTarget]) {
+        parentMap[compTarget] = gId;
+      }
+      if (node.definition_id.startsWith('custom.')) {
+        const suffix = node.definition_id.slice('custom.'.length);
+        if (project.model.graphs[suffix]) {
+          parentMap[suffix] = gId;
+        }
+      }
+    }
+  }
+
+  // Walk parent pointers to root_graph_id, reverse
+  const crumbs: Array<{ id: string; name: string }> = [];
+  let curr: string | undefined = openGraphId;
+  const visited = new Set<string>();
+
+  while (curr && !visited.has(curr)) {
+    visited.add(curr);
+    const name = project.model.graphs[curr]?.name || curr;
+    crumbs.unshift({ id: curr, name });
+    if (curr === rootGraphId) break;
+    curr = parentMap[curr];
+  }
+
+  // Always include root as first crumb
+  if (crumbs.length === 0 || crumbs[0].id !== rootGraphId) {
+    crumbs.unshift({ id: rootGraphId, name: rootName });
+  }
+
+  return crumbs;
+}
 export const BreadcrumbBar: React.FC = () => {
   const project = useProjectStore((s) => s.project);
   const openGraphId = useProjectStore((s) => s.openGraphId);
@@ -27,31 +92,21 @@ export const BreadcrumbBar: React.FC = () => {
 
   const rootGraphId = project?.model?.root_graph_id || 'graph_gpt';
   const currentGraph = project?.model?.graphs?.[openGraphId];
+  const breadcrumbSegments = buildBreadcrumb(project, openGraphId);
 
-  // Build breadcrumb segments by analyzing graph relationships
-  const rootName = project?.model?.graphs?.[rootGraphId]?.name || 'nanoGPT';
-  const breadcrumbSegments: Array<{ id: string; name: string }> = [
-    { id: rootGraphId, name: rootName },
-  ];
+  // Find stackId ancestor of kind 'repeat' if present
+  const repeatAncestor = breadcrumbSegments.find((seg) => project?.model?.graphs?.[seg.id]?.kind === 'repeat')
+    || Object.values(project?.model?.graphs || {}).find((g) => g.kind === 'repeat');
+  const stackId = repeatAncestor?.id;
 
-  if (openGraphId !== rootGraphId && currentGraph) {
-    if (openGraphId.includes('attention') || openGraphId.includes('mlp')) {
-      if (project?.model?.graphs?.['graph_stack']) {
-        breadcrumbSegments.push({ id: 'graph_stack', name: 'Transformer Stack' });
-      }
-      if (project?.model?.graphs?.['graph_block']) {
-        breadcrumbSegments.push({ id: 'graph_block', name: 'Transformer Block' });
-      }
-    } else if (openGraphId === 'graph_block') {
-      if (project?.model?.graphs?.['graph_stack']) {
-        breadcrumbSegments.push({ id: 'graph_stack', name: 'Transformer Stack' });
-      }
-    }
-    breadcrumbSegments.push({ id: openGraphId, name: currentGraph.name });
-  }
+  const n_layer = Number(
+    project?.model?.config?.n_layer ??
+    (stackId ? project?.model?.graphs?.[stackId]?.repeat_count : undefined) ??
+    1
+  );
 
-  const n_layer = Number(project?.model?.config?.['n_layer'] || 2);
   const isInsideOrNearRepeat =
+    Boolean(stackId) ||
     openGraphId.includes('block') ||
     openGraphId.includes('attention') ||
     openGraphId.includes('mlp') ||
@@ -199,8 +254,7 @@ export const BreadcrumbBar: React.FC = () => {
           <Layers size={13} color="#94a3b8" />
           <span style={{ fontSize: 11 }}>Block Instance:</span>
           <select
-            disabled
-            title="Block instance switching is not yet implemented"
+            title="Inspect activations for this repeated block"
             value={repeatInstanceIndex}
             onChange={(e) => setRepeatInstanceIndex(parseInt(e.target.value, 10))}
             style={{
@@ -211,8 +265,7 @@ export const BreadcrumbBar: React.FC = () => {
               borderRadius: 4,
               fontSize: 11,
               outline: 'none',
-              cursor: 'not-allowed',
-              opacity: 0.6,
+              cursor: 'pointer',
             }}
           >
             {Array.from({ length: n_layer }).map((_, i) => (

@@ -92,10 +92,11 @@ const CATEGORIES = [
   'Attention',
   'Composite Modules',
   'Loss & Outputs',
+  'Debug',
 ];
 
 export const NodePalette: React.FC<{ catalog?: NodeDefinitionSummary[] }> = ({ catalog = [] }) => {
-  const { addNode } = useProjectStore();
+  const { addNode, project } = useProjectStore();
   const { paletteSearchQuery, setPaletteSearchQuery, isPaletteOpen, togglePalette } = useUIStore();
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
 
@@ -104,7 +105,39 @@ export const NodePalette: React.FC<{ catalog?: NodeDefinitionSummary[] }> = ({ c
   };
 
   const safeCatalog = Array.isArray(catalog) ? catalog : [];
-  const filteredCatalog = safeCatalog.filter((item) => {
+  const customItems: NodeDefinitionSummary[] = [];
+  const graphs = project?.model?.graphs || {};
+  const allNodes = Object.values(graphs).flatMap((g) => g.nodes || []);
+  for (const g of Object.values(graphs)) {
+    const isCustom =
+      g.id.startsWith('graph_custom_') ||
+      allNodes.some((n) => n.definition_id === `custom.${g.id}`);
+    if (isCustom) {
+      customItems.push({
+        type_id: `custom.${g.id}`,
+        version: 1,
+        display_name: `${g.name}*`,
+        category: 'Composite Modules',
+        description: g.derived_from ? `Fork of ${g.derived_from}` : 'Custom module',
+        icon: 'Box',
+        is_composite: true,
+        property_schema: { type: 'object', properties: {} },
+        default_inputs: g.interface?.inputs || [],
+        default_outputs: g.interface?.outputs || [],
+      });
+    }
+  }
+
+  const seenTypes = new Set<string>();
+  const combinedCatalog: NodeDefinitionSummary[] = [];
+  for (const item of [...safeCatalog, ...customItems]) {
+    if (!seenTypes.has(item.type_id)) {
+      seenTypes.add(item.type_id);
+      combinedCatalog.push(item);
+    }
+  }
+
+  const filteredCatalog = combinedCatalog.filter((item) => {
     if (!paletteSearchQuery) return true;
     const q = paletteSearchQuery.toLowerCase();
     return (
@@ -113,7 +146,6 @@ export const NodePalette: React.FC<{ catalog?: NodeDefinitionSummary[] }> = ({ c
       item.category.toLowerCase().includes(q)
     );
   });
-
   const grouped = CATEGORIES.map((category) => ({
     category,
     items: filteredCatalog.filter((item) => item.category === category),

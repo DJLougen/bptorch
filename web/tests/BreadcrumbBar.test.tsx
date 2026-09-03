@@ -43,7 +43,7 @@ describe('BreadcrumbBar Component', () => {
     expect(screen.getByText('nanoGPT')).toBeInTheDocument();
   });
 
-  it('disables the block instance switcher', () => {
+  it('enables the block instance switcher', () => {
     const project = createInitialProject();
     project.model.graphs.graph_block = {
       id: 'graph_block',
@@ -62,7 +62,64 @@ describe('BreadcrumbBar Component', () => {
     });
 
     render(<BreadcrumbBar />);
-    expect(screen.getByTitle('Block instance switching is not yet implemented')).toBeDisabled();
+    expect(screen.getByTitle('Inspect activations for this repeated block')).not.toBeDisabled();
   });
 
+  it('resolves dynamic breadcrumbs from composite parent map without attention naming', () => {
+    const project = createInitialProject();
+    project.model.root_graph_id = 'graph_root';
+    project.model.graphs = {
+      graph_root: {
+        id: 'graph_root',
+        name: 'Root Graph',
+        kind: 'root',
+        interface: { inputs: [], outputs: [] },
+        nodes: [
+          {
+            id: 'n_mid',
+            definition_id: 'custom.mid',
+            display_name: 'Mid Subgraph',
+            properties: {},
+            metadata: { breakpoint: false, disabled: false },
+          },
+        ],
+        edges: [],
+      },
+      mid: {
+        id: 'mid',
+        name: 'Middle Subgraph',
+        kind: 'module',
+        interface: { inputs: [], outputs: [] },
+        nodes: [
+          {
+            id: 'n_block',
+            definition_id: 'builtin.nanogpt_block@1',
+            display_name: 'Block Node',
+            properties: {},
+            metadata: { breakpoint: false, disabled: false },
+          },
+        ],
+        edges: [],
+      },
+      graph_block: {
+        id: 'graph_block',
+        name: 'Transformer Block',
+        kind: 'module',
+        interface: { inputs: [], outputs: [] },
+        nodes: [],
+        edges: [],
+      },
+    };
+
+    useProjectStore.setState({
+      project,
+      openGraphId: 'graph_block',
+      graphHistory: ['graph_block'],
+      historyIndex: 0,
+    });
+
+    render(<BreadcrumbBar />);
+    expect(screen.getByText('Root Graph')).toBeInTheDocument();
+    expect(screen.getByText('Transformer Block')).toBeInTheDocument();
+  });
 });
