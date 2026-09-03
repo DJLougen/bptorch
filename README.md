@@ -40,8 +40,8 @@ No code generation step. No cloud. No telemetry. The canvas **is** the model.
 | Feature | One-line |
 |---|---|
 | **Executable Visual Graph** | Compiles directly to `torch.nn.Module` with real parameters |
-| **26 Architecture Samples** | Transformers (nanoGPT + Llama Tiny), MLPs, training pipelines |
-| **Templates → Architecture Samples** | Hierarchical Subgraphs \| Drill into stacks/blocks; custom composites fork to `custom.<graph_id>` |
+| **26 Architecture Samples** | Transformers (nanoGPT + Llama Tiny), MLPs, training pipelines — load from **Templates → Architecture Samples** |
+| **Hierarchical Subgraphs** | Drill into stacks/blocks; custom composites fork to `custom.<graph_id>` |
 | **Train on the canvas** | TopBar **Train** / **Pause**; live train+val loss; batch size live; val fraction |
 | **Playground** | Token generation with ChatML / Alpaca / Llama-3 templates |
 | **Cook standalone PyTorch** | Bottom drawer **PyTorch Code** → `POST /api/v1/cook/export` |
@@ -121,7 +121,8 @@ Cook / Import .py round-trip via /api/v1/cook/export and /api/v1/import/pytorch
 ## Current Limitations (v0.2)
 
 - No arbitrary Python in graph nodes (by design — [ADR 0004](docs/adr/0004-no-general-control-flow-v0.1.md))
-- No distributed / multi-node training: Event graph remains preview (ADR 0004)
+- No distributed / multi-node training
+- Event graph remains preview (ADR 0004)
 - PyTorch import supports the FX-traceable subset used by the importer (`Linear`, activations, sequential MLPs); unsupported ops return HTTP 422 with ops
 
 ## Screenshots

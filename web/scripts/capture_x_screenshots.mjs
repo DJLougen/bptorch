@@ -139,7 +139,7 @@ async function main() {
   await page.screenshot({ path: p04 });
 
   // Pause training
-  const pauseBtn = page.locator('button[aria-label="Pause training"]').first();
+  const pauseBtn = page.locator('button[aria-label="Train model"]').first();
   if (await pauseBtn.count()) {
     await pauseBtn.click();
   }
