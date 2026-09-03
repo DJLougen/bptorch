@@ -10,11 +10,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/DJLougen/bptorch/releases/tag/v0.2.0"><img src="https://img.shields.io/badge/release-v0.2.0-38bdf8?style=flat-square" alt="v0.2.0" /></a>
+  <a href="https://github.com/DJLougen/bptorch/releases/tag/v0.2.1"><img src="https://img.shields.io/badge/release-v0.2.1-38bdf8?style=flat-square" alt="v0.2.1" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Custom%20Permissive-22c55e?style=flat-square" alt="License" /></a>
   <img src="https://img.shields.io/badge/python-3.10+-3776ab?style=flat-square" alt="Python 3.10+" />
   <img src="https://img.shields.io/badge/pytorch-2.x-ee4c2c?style=flat-square" alt="PyTorch 2.x" />
-  <img src="https://img.shields.io/badge/tests-328%20passed-22c55e?style=flat-square" alt="328 tests" />
+  <img src="https://img.shields.io/badge/tests-334%20passed-22c55e?style=flat-square" alt="334 tests" />
 </p>
 
 ---
@@ -43,8 +43,8 @@ No code generation step. No cloud. No telemetry. The canvas **is** the model.
 | **26 Architecture Samples** | Transformers (nanoGPT + Llama Tiny), MLPs, training pipelines — load from **Templates → Architecture Samples** |
 | **Hierarchical Subgraphs** | Drill into stacks/blocks; custom composites fork to `custom.<graph_id>` |
 | **Train on the canvas** | TopBar **Train** / **Pause**; live train+val loss; batch size live; val fraction |
-| **Playground** | Token generation with ChatML / Alpaca / Llama-3 templates |
-| **Cook standalone PyTorch** | Bottom drawer **PyTorch Code** → `POST /api/v1/cook/export` |
+| **Playground** | Token generation with ChatML / Alpaca / Llama-3 prompt wrappers, temperature, top-k / top-p, incremental KV under `block_size` |
+| **Cook standalone PyTorch** | Bottom drawer **PyTorch Code** → `POST /api/v1/cook/export` (dual-flow training pipelines → 422) |
 | **Import `nn.Module`** | TopBar **Import .py** → `POST /api/v1/import/pytorch` (FX; unsupported ops → 422) |
 | **Blueprint Tracing** | WebSocket events, breakpoints, step/continue, tensor stats, param/grad norms |
 | **nanoGPT Parity** | Verified against pinned `karpathy/nanoGPT` |
@@ -62,7 +62,7 @@ make dev      # Backend :8000 + Frontend :5173
 Open **http://localhost:5173/** → click **Templates** → pick any of the **26 architecture samples**.
 
 ```bash
-make test            # 279 backend + 49 frontend tests
+make test            # 283 backend + 51 frontend tests
 make parity          # nanoGPT numerical parity suite
 make train-samples   # batch-train catalog samples
 make infer-samples   # batch-infer catalog samples
@@ -123,7 +123,9 @@ Cook / Import .py round-trip via /api/v1/cook/export and /api/v1/import/pytorch
 - No arbitrary Python in graph nodes (by design — [ADR 0004](docs/adr/0004-no-general-control-flow-v0.1.md))
 - No distributed / multi-node training
 - Event graph remains preview (ADR 0004)
-- PyTorch import supports the FX-traceable subset used by the importer (`Linear`, activations, sequential MLPs); unsupported ops return HTTP 422 with ops
+- Cook export covers architecture DAGs (including Llama Tiny); dual-flow training pipelines (Arch 7, 16, 17, 25) return HTTP 422
+- Playground KV cache is incremental last-token decode inside GQA / SDPA / RoPE while `T < block_size`; longer windows fall back to cropped full-sequence forward. Tokenizer is character-level; ChatML / Alpaca / Llama-3 are string templates, not a real BPE vocab
+- PyTorch import supports the FX-traceable subset used by the importer (`Linear`, `Embedding`, `LayerNorm`, `Dropout`, `GELU`, `ReLU`, `SiLU`, add / matmul / softmax); unsupported ops return HTTP 422 with `ops`
 
 ## Screenshots
 

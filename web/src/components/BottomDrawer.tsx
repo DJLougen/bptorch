@@ -61,10 +61,13 @@ export const BottomDrawer: React.FC = () => {
   const [useKVCache, setUseKVCache] = React.useState<boolean>(true);
   const [maxNewTokens, setMaxNewTokens] = React.useState<number>(32);
   const [temperature, setTemperature] = React.useState<number>(1.0);
+  const [topK, setTopK] = React.useState<number>(0);
+  const [topP, setTopP] = React.useState<number>(1);
   const [isGenerating, setIsGenerating] = React.useState<boolean>(false);
   const generatedText = useTraceStore((s) => s.generatedText);
   const clearGenerated = useTraceStore((s) => s.clearGenerated);
   const [cookedCode, setCookedCode] = React.useState<string>('');
+  const [cookError, setCookError] = React.useState<string | null>(null);
   const [isCooking, setIsCooking] = React.useState<boolean>(false);
   const [selectedDataset, setSelectedDataset] = React.useState<'synthetic' | 'tiny_shakespeare'>('synthetic');
   const [availableCheckpoints, setAvailableCheckpoints] = React.useState<Array<{ name: string; path: string }>>([]);
@@ -202,12 +205,16 @@ export const BottomDrawer: React.FC = () => {
 
   const handleCookExport = async () => {
     setIsCooking(true);
+    setCookError(null);
     try {
       const res = await ApiClient.cookExport(project);
       setCookedCode(res.code);
+      setCookError(null);
       addLog('info', 'PyTorch code exported successfully.');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      setCookError(msg);
+      setCookedCode('');
       addLog('error', msg);
     } finally {
       setIsCooking(false);
@@ -236,6 +243,8 @@ export const BottomDrawer: React.FC = () => {
         prompt: promptText,
         max_new_tokens: maxNewTokens,
         temperature,
+        top_k: topK,
+        top_p: topP,
         template: promptTemplate,
         use_cache: useKVCache,
         stream: true,
@@ -1364,6 +1373,42 @@ export const BottomDrawer: React.FC = () => {
                   }}
                 />
 
+                <label style={{ fontSize: 11, color: '#94a3b8' }}>Top-k</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={topK}
+                  onChange={(e) => setTopK(Number(e.target.value))}
+                  aria-label="Top-k"
+                  style={{
+                    background: '#0a0c12',
+                    border: '1px solid #1f2430',
+                    borderRadius: 4,
+                    color: '#e2e8f0',
+                    padding: '4px 8px',
+                    fontSize: 11,
+                  }}
+                />
+
+                <label style={{ fontSize: 11, color: '#94a3b8' }}>Top-p</label>
+                <input
+                  type="number"
+                  step={0.05}
+                  min={0}
+                  max={1}
+                  value={topP}
+                  onChange={(e) => setTopP(Number(e.target.value))}
+                  aria-label="Top-p"
+                  style={{
+                    background: '#0a0c12',
+                    border: '1px solid #1f2430',
+                    borderRadius: 4,
+                    color: '#e2e8f0',
+                    padding: '4px 8px',
+                    fontSize: 11,
+                  }}
+                />
+
                 <button
                   onClick={handleGenerate}
                   disabled={isGenerating}
@@ -1457,7 +1502,21 @@ export const BottomDrawer: React.FC = () => {
               </button>
             </div>
 
-            {cookedCode ? (
+            {cookError ? (
+              <div
+                role="alert"
+                style={{
+                  background: '#1a0f0f',
+                  border: '1px solid #7f1d1d',
+                  borderRadius: 4,
+                  padding: 12,
+                  fontSize: 11,
+                  color: '#fca5a5',
+                }}
+              >
+                {cookError}
+              </div>
+            ) : cookedCode ? (
               <pre
                 style={{
                   background: '#0a0c12',

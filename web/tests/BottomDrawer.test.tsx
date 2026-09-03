@@ -33,6 +33,26 @@ describe('BottomDrawer playground tab', () => {
     expect(screen.getByRole('button', { name: /Generate/i })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Prompt template' })).toBeInTheDocument();
     expect(screen.getByLabelText(/KV Cache/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Top-k')).toBeInTheDocument();
+    expect(screen.getByLabelText('Top-p')).toBeInTheDocument();
+  });
+});
+
+describe('BottomDrawer cook tab', () => {
+  beforeEach(() => {
+    useUIStore.setState({ isDrawerOpen: true, activeDrawerTab: 'code' });
+    useProjectStore.getState().loadProject(useProjectStore.getState().project);
+  });
+
+  it('shows an alert when cook export fails', async () => {
+    vi.spyOn(ApiClient, 'cookExport').mockRejectedValue(
+      new Error('Cook export does not support dual-flow training pipelines')
+    );
+    render(<BottomDrawer />);
+    fireEvent.click(screen.getByRole('button', { name: /Export PyTorch Code/i }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Cook export does not support dual-flow training pipelines'
+    );
   });
 });
 describe('BottomDrawer loss tab controls', () => {

@@ -143,3 +143,112 @@ def test_generate_route_with_template_and_cache():
     data = response.json()
     assert data.get("status") == "ok"
     assert len(data.get("token_ids", [])) == 4
+
+def _create_engine(session_id: str, project):
+    existing = global_session_manager.get_session(session_id)
+    if existing is not None:
+        existing.stop()
+    session = global_session_manager.create_training_session(session_id, project, "cpu")
+    return GenerationEngine(session)
+
+
+def test_cache_matches_no_cache_nanogpt():
+    project = create_arch_1_nanogpt_tiny()
+    prompt_ids = _create_engine("gen_cache_parity_a", project).encode_prompt("Hi")
+
+    engine_cached = _create_engine("gen_cache_parity_b", project)
+    cached_ids = [
+        tid
+        for tid, _ in engine_cached.generate_tokens(
+            input_ids=prompt_ids,
+            max_new_tokens=4,
+            temperature=0.0,
+            use_cache=True,
+        )
+    ]
+
+    engine_full = _create_engine("gen_cache_parity_c", project)
+    full_ids = [
+        tid
+        for tid, _ in engine_full.generate_tokens(
+            input_ids=prompt_ids,
+            max_new_tokens=4,
+            temperature=0.0,
+            use_cache=False,
+        )
+    ]
+
+    assert cached_ids == full_ids
+
+
+def test_decode_cache_kv_sequence_grows():
+    project = create_arch_1_nanogpt_tiny()
+    engine = _create_engine("gen_cache_growth", project)
+    prompt_ids = engine.encode_prompt("Hello")
+    prompt_len = prompt_ids.size(1)
+    new_tokens = 4
+
+    list(
+        engine.generate_tokens(
+            input_ids=prompt_ids,
+            max_new_tokens=new_tokens,
+            temperature=0.0,
+            use_cache=True,
+        )
+    )
+
+    assert engine.decode_cache.k
+    first_k = next(iter(engine.decode_cache.k.values()))
+    assert first_k.size(-2) >= prompt_len + new_tokens - 1
+
+
+def test_llama_tiny_cache_matches_no_cache():
+    from neural_blueprint.templates.llama import create_llama_tiny_template
+
+    project = create_llama_tiny_template()
+    prompt_ids = _create_engine("gen_llama_cache_a", project).encode_prompt("Hi")
+
+    engine_cached = _create_engine("gen_llama_cache_b", project)
+    cached_ids = [
+        tid
+        for tid, _ in engine_cached.generate_tokens(
+            input_ids=prompt_ids,
+            max_new_tokens=4,
+            temperature=0.0,
+            use_cache=True,
+        )
+    ]
+
+    engine_full = _create_engine("gen_llama_cache_c", project)
+    full_ids = [
+        tid
+        for tid, _ in engine_full.generate_tokens(
+            input_ids=prompt_ids,
+            max_new_tokens=4,
+            temperature=0.0,
+            use_cache=False,
+        )
+    ]
+
+    assert len(cached_ids) == 4
+    assert cached_ids == full_ids
+
+
+def test_rope_decode_positions_use_past_len():
+    import torch
+
+    from neural_blueprint.registry.primitives.attention import RoPENode
+    from neural_blueprint.runtime.kv_context import DecodeCache, decode_cache_scope
+
+    node = RoPENode()
+    spec = node.build_runtime({"head_dim": 4, "n_head": 2, "base": 10000.0})
+    apply_rope = spec.factory()
+
+    x = torch.randn(1, 1, 8)
+    out_zero = apply_rope(x)
+
+    cache = DecodeCache(enabled=True, past_len=5)
+    with decode_cache_scope(cache):
+        out_offset = apply_rope(x)
+
+    assert not torch.allclose(out_zero, out_offset)

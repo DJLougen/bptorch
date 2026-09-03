@@ -1,5 +1,6 @@
 """Autoregressive generation engine with KV cache, sampling controls, and prompt templates."""
 
+from neural_blueprint.runtime.kv_context import DecodeCache, decode_cache_scope
 from typing import Any, Dict, Iterator, Literal, Optional, Tuple
 
 import torch
@@ -63,6 +64,7 @@ class GenerationEngine:
         self.project = session.project
         self.device = getattr(session, "device", "cpu")
         self.cache = KVCache()
+        self.decode_cache = DecodeCache()
 
         # Determine vocab size
         vocab_size = int(
@@ -116,72 +118,97 @@ class GenerationEngine:
         if curr_ids.dim() == 1:
             curr_ids = curr_ids.unsqueeze(0)
 
+        self.cache.clear()
         if use_cache:
-            self.cache.clear()
+            self.decode_cache = DecodeCache(enabled=True)
 
         input_name = self._input_name()
         self.session.model.eval()
+
+        def _sample_logits(logits: torch.Tensor) -> torch.Tensor:
+            if temperature <= 0.0:
+                return torch.argmax(logits, dim=-1, keepdim=True)
+
+            scaled_logits = logits / temperature
+            if top_k > 0:
+                v, _ = torch.topk(scaled_logits, min(top_k, scaled_logits.size(-1)))
+                scaled_logits[scaled_logits < v[:, [-1]]] = -float("Inf")
+
+            if 0.0 < top_p < 1.0:
+                sorted_logits, sorted_indices = torch.sort(scaled_logits, descending=True, dim=-1)
+                cumulative_probs = torch.cumsum(torch.softmax(sorted_logits, dim=-1), dim=-1)
+                sorted_indices_to_remove = cumulative_probs > top_p
+                sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
+                sorted_indices_to_remove[..., 0] = 0
+
+                indices_to_remove = sorted_indices_to_remove.scatter(
+                    1, sorted_indices, sorted_indices_to_remove
+                )
+                scaled_logits[indices_to_remove] = -float("Inf")
+
+            probs = torch.softmax(scaled_logits, dim=-1)
+            return torch.multinomial(probs, num_samples=1)
+
+        def _forward_logits(ids: torch.Tensor) -> torch.Tensor:
+            out = self.session.model(**{input_name: ids})
+
+            if isinstance(out, dict):
+                if "logits" in out:
+                    logits = out["logits"]
+                elif "output" in out:
+                    logits = out["output"]
+                else:
+                    logits = next(iter(out.values()))
+            elif isinstance(out, (list, tuple)):
+                logits = out[0]
+            else:
+                logits = out
+
+            if not isinstance(logits, torch.Tensor):
+                raise RuntimeError(f"Model output did not produce a tensor: {type(logits)}")
+
+            if logits.dim() == 3:
+                logits = logits[:, -1, :]
+            elif logits.dim() == 2 and logits.size(0) != ids.size(0):
+                logits = logits[-1:, :]
+            return logits
+
+        initial_prompt_len = curr_ids.size(1)
+
         try:
-            for _ in range(max_new_tokens):
+            # Incremental KV is only valid while the window is shorter than
+            # block_size: learned WPE / RoPE indices and cache length must match.
+            # Longer contexts fall back to the cropped full-sequence path.
+            can_cache = use_cache and initial_prompt_len < block_size
+            if can_cache:
+                with decode_cache_scope(self.decode_cache):
+                    self.decode_cache.reset_call_order()
+                    logits = _forward_logits(curr_ids)
+                    next_token = _sample_logits(logits)
+                    token_id = int(next_token[0, 0].item())
+                    curr_ids = torch.cat([curr_ids, next_token], dim=1)
+                    self.decode_cache.past_len = initial_prompt_len
+                    self.cache.step += 1
+                    yield token_id, self.tokenizer.decode([token_id])
+
+                    while self.cache.step < max_new_tokens and self.decode_cache.past_len < block_size:
+                        self.decode_cache.reset_call_order()
+                        logits = _forward_logits(curr_ids[:, -1:])
+                        next_token = _sample_logits(logits)
+                        token_id = int(next_token[0, 0].item())
+                        curr_ids = torch.cat([curr_ids, next_token], dim=1)
+                        self.decode_cache.past_len += 1
+                        self.cache.step += 1
+                        yield token_id, self.tokenizer.decode([token_id])
+
+            while self.cache.step < max_new_tokens:
                 cond_ids = (
                     curr_ids
                     if curr_ids.size(1) <= block_size
                     else curr_ids[:, -block_size:]
                 )
-
-                out = self.session.model(**{input_name: cond_ids})
-
-                if isinstance(out, dict):
-                    if "logits" in out:
-                        logits = out["logits"]
-                    elif "output" in out:
-                        logits = out["output"]
-                    else:
-                        logits = next(iter(out.values()))
-                elif isinstance(out, (list, tuple)):
-                    logits = out[0]
-                else:
-                    logits = out
-
-                if not isinstance(logits, torch.Tensor):
-                    raise RuntimeError(f"Model output did not produce a tensor: {type(logits)}")
-
-                if logits.dim() == 3:
-                    logits = logits[:, -1, :]  # [B, vocab_size]
-                elif logits.dim() == 2 and logits.size(0) != curr_ids.size(0):
-                    logits = logits[-1:, :]
-
-                if temperature <= 0.0:
-                    next_token = torch.argmax(logits, dim=-1, keepdim=True)
-                else:
-                    scaled_logits = logits / temperature
-                    if top_k > 0:
-                        v, _ = torch.topk(
-                            scaled_logits, min(top_k, scaled_logits.size(-1))
-                        )
-                        scaled_logits[scaled_logits < v[:, [-1]]] = -float("Inf")
-
-                    if 0.0 < top_p < 1.0:
-                        sorted_logits, sorted_indices = torch.sort(
-                            scaled_logits, descending=True, dim=-1
-                        )
-                        cumulative_probs = torch.cumsum(
-                            torch.softmax(sorted_logits, dim=-1), dim=-1
-                        )
-                        sorted_indices_to_remove = cumulative_probs > top_p
-                        sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[
-                            ..., :-1
-                        ].clone()
-                        sorted_indices_to_remove[..., 0] = 0
-
-                        indices_to_remove = sorted_indices_to_remove.scatter(
-                            1, sorted_indices, sorted_indices_to_remove
-                        )
-                        scaled_logits[indices_to_remove] = -float("Inf")
-
-                    probs = torch.softmax(scaled_logits, dim=-1)
-                    next_token = torch.multinomial(probs, num_samples=1)
-
+                logits = _forward_logits(cond_ids)
+                next_token = _sample_logits(logits)
                 token_id = int(next_token[0, 0].item())
                 curr_ids = torch.cat([curr_ids, next_token], dim=1)
                 self.cache.step += 1

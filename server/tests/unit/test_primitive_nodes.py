@@ -210,11 +210,22 @@ def test_gqa_shape():
 
 @pytest.mark.asyncio
 async def test_llama_tiny_validates_and_runs():
+    from neural_blueprint.ir.evaluator import evaluate_value
+    from neural_blueprint.ir.models import ExpressionValue
     from neural_blueprint.templates.llama import create_llama_tiny_template
     from neural_blueprint.validation.validator import ProjectValidator
     from neural_blueprint.runtime.inference import InferenceEngine
 
     p = create_llama_tiny_template()
+    attn_nodes = {n.id: n for n in p.model.graphs["graph_llama_attention"].nodes}
+    k_out = attn_nodes["node_k_proj"].properties["out_features"]
+    v_out = attn_nodes["node_v_proj"].properties["out_features"]
+    assert isinstance(k_out, ExpressionValue)
+    assert k_out.kind == "expression"
+    assert isinstance(v_out, ExpressionValue)
+    assert v_out.kind == "expression"
+    assert evaluate_value(k_out, config=p.model.config) == 16
+
     val = ProjectValidator().validate(p)
     assert val.valid
 

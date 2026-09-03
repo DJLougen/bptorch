@@ -2,6 +2,29 @@
 
 All notable changes to bpTorch are documented in this file.
 
+## [0.2.1] - 2026-09-03
+
+Playground KV cache, Llama GQA dimensions, and honest cook/import UI.
+
+### Highlights
+- **Incremental KV cache** — prefill then last-token decode inside GQA / SDPA / RoPE / Arange; falls back to cropped full-sequence forward at `block_size`
+- **Llama Tiny GQA** — K/V projections are `n_kv_head * (n_embd // n_head)`; RoPE `head_dim` is derived, not hardcoded 8
+- **Playground** — top-k / top-p sampling controls
+- **Cook 422** — dual-flow training pipelines show the error in the PyTorch Code drawer instead of failing silently
+- **Architecture tab** — real control (no fake disabled styling)
+
+### Verified
+| Suite | Result |
+|---|---|
+| Backend unit tests | 283 passed |
+| Frontend tests | 51 passed |
+| nanoGPT parity | All checks pass (`make parity`) |
+| Catalog training/inference JSON | 25/25 (Arch 26 not in those JSON files) |
+
+### Notes
+- Tokenizer remains character-level; ChatML / Alpaca / Llama-3 are prompt string wrappers
+- Cook still 422s Arch 7 / 16 / 17 / 25 (dual-flow event graphs)
+
 ## [0.2.0] - 2026-09-03
 
 Editor, training workspace, Llama Tiny, and PyTorch import/export.
@@ -65,5 +88,6 @@ First public release of **bpTorch** — a Blueprint-style visual editor for PyTo
 - No distributed / multi-node training
 - Block instance switching in breadcrumb UI is not yet wired
 
+[0.2.1]: https://github.com/DJLougen/bptorch/releases/tag/v0.2.1
 [0.2.0]: https://github.com/DJLougen/bptorch/releases/tag/v0.2.0
 [0.1.0]: https://github.com/DJLougen/bptorch/releases/tag/v0.1.0

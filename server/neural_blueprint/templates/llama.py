@@ -5,6 +5,8 @@ from typing import Any, Dict
 from neural_blueprint.ir.models import (
     ConfigRefValue,
     Edge,
+    ExpressionOp,
+    ExpressionValue,
     GraphDefinition,
     GraphInterface,
     ModelDefinition,
@@ -13,6 +15,7 @@ from neural_blueprint.ir.models import (
     PortReference,
     Project,
     ProjectMetadata,
+    SafeExpression,
     TrainingConfig,
     UIState,
     WeightBinding,
@@ -39,6 +42,26 @@ def create_llama_tiny_template(
         "n_embd": n_embd,
         "dropout": dropout,
     }
+
+
+    head_dim_expr = ExpressionValue(
+        expression=SafeExpression(
+            op=ExpressionOp.INTEGER_DIVIDE,
+            left=ConfigRefValue(key="n_embd"),
+            right=ConfigRefValue(key="n_head"),
+        )
+    )
+    kv_out_expr = ExpressionValue(
+        expression=SafeExpression(
+            op=ExpressionOp.MULTIPLY,
+            left=ConfigRefValue(key="n_kv_head"),
+            right=SafeExpression(
+                op=ExpressionOp.INTEGER_DIVIDE,
+                left=ConfigRefValue(key="n_embd"),
+                right=ConfigRefValue(key="n_head"),
+            ),
+        )
+    )
 
     # 1. Subgraph: Input Embeddings (Token Embeddings only, no learned pos)
     g_input_emb = GraphDefinition(
@@ -122,7 +145,7 @@ def create_llama_tiny_template(
                 display_name="K Projection",
                 properties={
                     "in_features": ConfigRefValue(key="n_embd"),
-                    "out_features": ConfigRefValue(key="n_embd"),
+                    "out_features": kv_out_expr,
                     "bias": False,
                 },
             ),
@@ -132,7 +155,7 @@ def create_llama_tiny_template(
                 display_name="V Projection",
                 properties={
                     "in_features": ConfigRefValue(key="n_embd"),
-                    "out_features": ConfigRefValue(key="n_embd"),
+                    "out_features": kv_out_expr,
                     "bias": False,
                 },
             ),
@@ -141,7 +164,7 @@ def create_llama_tiny_template(
                 definition_id="builtin.rope@1",
                 display_name="RoPE on Q",
                 properties={
-                    "head_dim": 8,
+                    "head_dim": head_dim_expr,
                     "n_head": ConfigRefValue(key="n_head"),
                 },
             ),
@@ -150,8 +173,8 @@ def create_llama_tiny_template(
                 definition_id="builtin.rope@1",
                 display_name="RoPE on K",
                 properties={
-                    "head_dim": 8,
-                    "n_head": ConfigRefValue(key="n_head"),
+                    "head_dim": head_dim_expr,
+                    "n_head": ConfigRefValue(key="n_kv_head"),
                 },
             ),
             NodeInstance(

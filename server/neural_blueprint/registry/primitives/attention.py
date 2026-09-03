@@ -8,6 +8,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 
 from neural_blueprint.ir.evaluator import evaluate_value
+from neural_blueprint.runtime.kv_context import get_decode_cache
 from neural_blueprint.ir.models import (
     LiteralDim,
     PortDefinition,
@@ -366,9 +367,16 @@ class ScaledDotProductAttentionNode(NodeDefinition):
 
         class SDPAModule(nn.Module):
             def forward(self, q, k, v):
+                cache = get_decode_cache()
+                if cache is not None and cache.enabled:
+                    k, v = cache.update_kv(k, v)
+
+                t_q = q.size(-2)
+                t_k = k.size(-2)
+                use_causal = is_causal and t_q == t_k
                 p = dropout_p if self.training else 0.0
                 return F.scaled_dot_product_attention(
-                    q, k, v, attn_mask=None, dropout_p=p, is_causal=is_causal
+                    q, k, v, attn_mask=None, dropout_p=p, is_causal=use_causal
                 )
 
         return RuntimeModuleSpec(
@@ -445,19 +453,28 @@ class ManualCausalAttentionNode(NodeDefinition):
                 self.attn_dropout = nn.Dropout(dropout_p)
 
             def forward(self, q, k, v, mask=None):
-                b, nh, t, hs = q.size()
-                # (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)
+                cache = get_decode_cache()
+                if cache is not None and cache.enabled:
+                    k, v = cache.update_kv(k, v)
+
+                b, nh, t_q, hs = q.size()
+                t_k = k.size(-2)
+                # (B, nh, T_q, hs) x (B, nh, hs, T_k) -> (B, nh, T_q, T_k)
                 att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(hs))
                 if mask is not None:
-                    att = att.masked_fill(mask[:, :, :t, :t] == 0, float("-inf"))
+                    if mask.dim() == 2:
+                        att = att.masked_fill(mask.view(1, 1, t_q, t_k) == 0, float("-inf"))
+                    else:
+                        att = att.masked_fill(mask[:, :, :t_q, :t_k] == 0, float("-inf"))
                 else:
-                    # Create causal mask on the fly if not provided
-                    causal_mask = torch.tril(torch.ones(t, t, device=q.device)).view(1, 1, t, t)
-                    att = att.masked_fill(causal_mask == 0, float("-inf"))
+                    i = torch.arange(t_q, device=q.device).unsqueeze(1)
+                    j = torch.arange(t_k, device=q.device).unsqueeze(0)
+                    causal = j <= (i + t_k - t_q)
+                    att = att.masked_fill(~causal.view(1, 1, t_q, t_k), float("-inf"))
 
                 att = F.softmax(att, dim=-1)
                 att = self.attn_dropout(att)
-                y = att @ v  # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
+                y = att @ v
                 return y
 
         return RuntimeModuleSpec(
@@ -558,8 +575,9 @@ class RoPENode(NodeDefinition):
 
             if orig_dim == 3:
                 B, T, C = x.shape
-                d = C // n_head
-                x_4d = x.view(B, T, n_head, d).transpose(1, 2)
+                d = head_dim if head_dim else C // n_head
+                num_h = C // d
+                x_4d = x.view(B, T, num_h, d).transpose(1, 2)
             elif orig_dim == 4:
                 x_4d = x
             else:
@@ -571,8 +589,16 @@ class RoPENode(NodeDefinition):
 
             inv_freq = 1.0 / (base ** (torch.arange(0, D, 2, device=device, dtype=torch.float32) / D))
 
+            cache = get_decode_cache()
             if positions is not None:
                 t = positions.to(dtype=torch.float32, device=device)
+            elif cache is not None and cache.enabled:
+                t = torch.arange(
+                    cache.past_len,
+                    cache.past_len + T,
+                    device=device,
+                    dtype=torch.float32,
+                )
             else:
                 t = torch.arange(T, device=device, dtype=torch.float32)
 
@@ -721,13 +747,21 @@ class GroupedQueryAttentionNode(NodeDefinition):
             else:
                 k_heads = k
                 v_heads = v
+                T_k = k_heads.size(-2)
+
+            cache = get_decode_cache()
+            if cache is not None and cache.enabled:
+                k_heads, v_heads = cache.update_kv(k_heads, v_heads)
+                T_k = k_heads.size(-2)
 
             if n_head != n_kv_head:
                 reps = n_head // n_kv_head
                 k_heads = torch.repeat_interleave(k_heads, reps, dim=1)
                 v_heads = torch.repeat_interleave(v_heads, reps, dim=1)
+
+            use_causal = T_q == T_k
             out = F.scaled_dot_product_attention(
-                q_heads, k_heads, v_heads, is_causal=True, dropout_p=dropout_p
+                q_heads, k_heads, v_heads, is_causal=use_causal, dropout_p=dropout_p
             )
             return out.transpose(1, 2).contiguous().view(B, T_q, n_head * head_dim)
 

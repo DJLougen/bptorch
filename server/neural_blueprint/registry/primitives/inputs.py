@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 
 import torch
 
+from neural_blueprint.runtime.kv_context import get_decode_cache
 from neural_blueprint.ir.evaluator import evaluate_value
 from neural_blueprint.ir.models import (
     LiteralDim,
@@ -317,6 +318,11 @@ class ArangeNode(NodeDefinition):
             else:
                 t = 8
                 device = torch.device("cpu")
+
+            cache = get_decode_cache()
+            if cache is not None and cache.enabled:
+                start = cache.past_len
+                return torch.arange(start, start + t, dtype=torch_dtype, device=device)
             return torch.arange(0, t, dtype=torch_dtype, device=device)
 
         return RuntimeModuleSpec(

@@ -171,6 +171,7 @@ export const BreadcrumbBar: React.FC = () => {
         {/* Graph Kind Chips */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginRight: 8 }}>
           <button
+            title="Show architecture graph"
             onClick={() => openGraph(rootGraphId)}
             style={{
               background: !isEventGraph ? '#1e3a8a' : '#181b24',
@@ -181,8 +182,8 @@ export const BreadcrumbBar: React.FC = () => {
               padding: '2px 8px',
               fontSize: 10,
               fontWeight: 600,
-              cursor: 'not-allowed',
-              opacity: 0.6,
+              cursor: 'pointer',
+              opacity: 1,
               display: 'flex',
               alignItems: 'center',
               gap: 4,

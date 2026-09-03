@@ -54,8 +54,19 @@ export class ApiClient {
       body: JSON.stringify({ project, output_path: outputPath }),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new Error(err.detail || `Cook export failed: ${res.statusText}`);
+      let detailMsg = `Cook export failed: ${res.statusText}`;
+      try {
+        const errorJson = await res.json();
+        if (errorJson?.detail) {
+          detailMsg =
+            typeof errorJson.detail === 'string'
+              ? errorJson.detail
+              : errorJson.detail.message || JSON.stringify(errorJson.detail);
+        }
+      } catch {
+        // ignore json parse error
+      }
+      throw new Error(detailMsg);
     }
     return res.json();
   }

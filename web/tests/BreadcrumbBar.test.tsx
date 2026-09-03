@@ -122,4 +122,16 @@ describe('BreadcrumbBar Component', () => {
     expect(screen.getByText('Root Graph')).toBeInTheDocument();
     expect(screen.getByText('Transformer Block')).toBeInTheDocument();
   });
+
+  it('enables the Architecture button with show-architecture title', () => {
+    useProjectStore.setState({
+      openGraphId: 'graph_gpt',
+      project: createInitialProject(),
+    });
+
+    render(<BreadcrumbBar />);
+    const archBtn = screen.getByRole('button', { name: /Architecture/i });
+    expect(archBtn).not.toBeDisabled();
+    expect(archBtn).toHaveAttribute('title', 'Show architecture graph');
+  });
 });
